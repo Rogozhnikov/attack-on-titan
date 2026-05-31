@@ -1,0 +1,15 @@
+{
+  "name": "attack-on-titan-recruit",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace apps/api && npm run build --workspace apps/web",
+    "typecheck": "npm run typecheck --workspace apps/api && npm run typecheck --workspace apps/web"
+  },
+  "overrides": {
+    "fast-uri": "^3.1.2"
+  }
+}

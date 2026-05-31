@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attack on Titan: Recruit</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.addEventListener("error", function (event) {
+        var root = document.getElementById("root");
+        if (root && !root.childElementCount) {
+          root.style.padding = "24px";
+          root.style.color = "#f4efe4";
+          root.textContent = "Ошибка загрузки интерфейса: " + (event.message || "неизвестная ошибка");
+        }
+      });
+      window.addEventListener("unhandledrejection", function (event) {
+        var root = document.getElementById("root");
+        if (root && !root.childElementCount) {
+          root.style.padding = "24px";
+          root.style.color = "#f4efe4";
+          root.textContent = "Ошибка загрузки интерфейса: " + ((event.reason && event.reason.message) || "неизвестная ошибка");
+        }
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
