@@ -913,12 +913,12 @@ select option {
 
 .map-build-slot {
   position: absolute;
-  width: 112px;
-  min-height: 70px;
+  width: 90px;
+  height: 64px;
   display: grid;
-  gap: 5px;
+  gap: 4px;
   align-content: center;
-  padding: 8px;
+  padding: 7px;
   border: 1px solid rgba(58, 36, 18, .52);
   border-radius: 7px;
   color: #25170d;
@@ -954,32 +954,32 @@ select option {
 .plot-index {
   width: fit-content;
   margin: 0 auto;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 999px;
   color: #f4ead0;
   background: rgba(47, 30, 16, .66);
-  font-size: .62rem;
+  font-size: .58rem;
   font-weight: 950;
 }
 
 .map-build-slot strong {
-  font-size: .74rem;
+  font-size: .62rem;
   line-height: 1.12;
   text-transform: uppercase;
 }
 
 .map-build-slot span {
-  font-size: .7rem;
+  font-size: .62rem;
   font-weight: 900;
 }
 
 .map-build-slot select {
-  min-height: 32px;
-  padding: 0 7px;
+  min-height: 26px;
+  padding: 0 5px;
   border-color: rgba(44, 28, 16, .42);
   color: #25170d;
   background: rgba(255, 245, 220, .82);
-  font-size: .7rem;
+  font-size: .62rem;
   font-weight: 800;
 }
 
@@ -990,13 +990,17 @@ select option {
     repeating-linear-gradient(45deg, rgba(61, 42, 25, .14) 0 8px, transparent 8px 15px);
 }
 
+.map-build-slot.empty strong {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .map-build-slot.empty strong::before {
-  content: "+";
-  display: block;
-  margin-bottom: 1px;
-  color: #6b4828;
-  font-size: 1rem;
-  line-height: .9;
+  display: none;
 }
 
 .map-build-slot.built {
@@ -1006,13 +1010,20 @@ select option {
     repeating-linear-gradient(90deg, rgba(63, 43, 28, .18) 0 8px, transparent 8px 15px);
 }
 
+.map-build-slot.built strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .map-build-slot.built::after {
   content: "";
   position: absolute;
   left: 50%;
   bottom: calc(100% - 8px);
-  width: 34px;
-  height: 30px;
+  width: 28px;
+  height: 24px;
   background: #6c5841;
   clip-path: polygon(50% 0, 100% 35%, 100% 100%, 0 100%, 0 35%);
   transform: translateX(-50%);
@@ -1037,15 +1048,15 @@ select option {
   background: #4c5555;
 }
 
-.plot-1 { left: 43%; top: 37%; }
-.plot-2 { left: 57%; top: 37%; }
-.plot-3 { left: 36%; top: 48%; }
-.plot-4 { left: 64%; top: 48%; }
-.plot-5 { left: 37%; top: 60%; }
-.plot-6 { left: 63%; top: 60%; }
-.plot-7 { left: 43%; top: 70%; }
-.plot-8 { left: 57%; top: 70%; }
-.plot-9 { left: 50%; top: 42%; }
+.plot-1 { left: 38%; top: 36%; }
+.plot-2 { left: 50%; top: 34%; }
+.plot-3 { left: 62%; top: 36%; }
+.plot-4 { left: 34%; top: 49%; }
+.plot-5 { left: 66%; top: 49%; }
+.plot-6 { left: 36%; top: 63%; }
+.plot-7 { left: 48%; top: 68%; }
+.plot-8 { left: 60%; top: 63%; }
+.plot-9 { left: 50%; top: 47%; }
 
 .titan-marker {
   position: absolute;
@@ -1334,7 +1345,7 @@ select option {
 
   .map-build-slot {
     width: 94px;
-    min-height: 58px;
+    height: 58px;
     padding: 7px;
   }
 
