@@ -714,6 +714,208 @@
       flex: 1 1 180px;
     }
 
+    .expedition-panel {
+      display: none;
+      margin-top: 28px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(44, 48, 42, .96), rgba(29, 32, 29, .96));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .expedition-panel.open {
+      display: block;
+    }
+
+    .expedition-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .expedition-title {
+      display: grid;
+      gap: 8px;
+    }
+
+    .expedition-title h2 {
+      font-size: clamp(1.25rem, 3vw, 2.2rem);
+      line-height: 1;
+    }
+
+    .expedition-title p {
+      max-width: 760px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .mission-meter {
+      display: grid;
+      gap: 8px;
+      min-width: 220px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    .mission-meter strong {
+      color: var(--text);
+      font-size: 1.35rem;
+    }
+
+    .resource-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(110px, 1fr));
+      gap: 10px;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, .09);
+    }
+
+    .resource-tile {
+      display: grid;
+      gap: 5px;
+      min-height: 76px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .055);
+    }
+
+    .resource-tile span {
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .resource-tile strong {
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+
+    .expedition-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+      gap: 18px;
+      padding: 20px;
+    }
+
+    .site-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+
+    .site-card {
+      display: grid;
+      gap: 10px;
+      min-height: 190px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, .11);
+      border-radius: var(--radius);
+      color: var(--text);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, .08), transparent 42%),
+        rgba(0, 0, 0, .15);
+      text-align: left;
+      transition: transform .18s ease, border-color .18s ease;
+    }
+
+    .site-card:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: rgba(224, 180, 83, .58);
+    }
+
+    .site-card:disabled {
+      cursor: not-allowed;
+      opacity: .48;
+    }
+
+    .site-card h3 {
+      font-size: 1rem;
+      line-height: 1.15;
+    }
+
+    .site-card p {
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    .site-reward {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .site-reward span {
+      min-height: 24px;
+      padding: 4px 8px;
+      border: 1px solid rgba(224, 180, 83, .3);
+      border-radius: 999px;
+      color: #f1dfaa;
+      background: rgba(224, 180, 83, .08);
+      font-size: .74rem;
+      font-weight: 850;
+    }
+
+    .mission-sidebar {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .mission-log,
+    .mission-report {
+      min-height: 150px;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: var(--radius);
+      background: rgba(0, 0, 0, .18);
+    }
+
+    .mission-log h3,
+    .mission-report h3 {
+      margin-bottom: 10px;
+      font-size: .9rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .mission-log ul {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
+    .mission-report {
+      display: none;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .mission-report.open {
+      display: block;
+    }
+
+    .mission-report strong {
+      color: var(--text);
+    }
+
+    .mission-controls {
+      display: grid;
+      gap: 10px;
+    }
+
     @media (max-width: 940px) {
       .layout {
         grid-template-columns: 1fr;
@@ -730,6 +932,19 @@
 
       .search {
         width: 100%;
+      }
+
+      .expedition-head,
+      .expedition-body {
+        grid-template-columns: 1fr;
+      }
+
+      .mission-meter {
+        min-width: 0;
+      }
+
+      .resource-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
 
@@ -753,6 +968,10 @@
       }
 
       .mode-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .resource-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -863,6 +1082,51 @@
         <div class="cards" id="cards"></div>
         <div class="empty" id="emptyState">По этому фильтру никого не нашлось.</div>
       </section>
+    </section>
+
+    <section class="expedition-panel" id="expeditionPanel" aria-labelledby="expeditionTitle">
+      <div class="expedition-head">
+        <div class="expedition-title">
+          <span class="tag">Вылазка 01</span>
+          <h2 id="expeditionTitle">Аванпост снабжения</h2>
+          <p id="expeditionBrief">
+            Отряд выходит за стену к заброшенному аванпосту. Цель: собрать не менее 50 ресурсов, по возможности спасти людей и вернуться до темноты.
+          </p>
+        </div>
+        <div class="mission-meter">
+          <span>Действий осталось</span>
+          <strong id="actionsLeft">6</strong>
+          <span>Риск вылазки</span>
+          <div class="bar"><span id="riskBar"></span></div>
+          <strong id="riskValue">10%</strong>
+        </div>
+      </div>
+
+      <div class="resource-grid" aria-label="Ресурсы вылазки">
+        <div class="resource-tile"><span>Еда</span><strong id="foodValue">0</strong></div>
+        <div class="resource-tile"><span>Дерево</span><strong id="woodValue">0</strong></div>
+        <div class="resource-tile"><span>Камень</span><strong id="stoneValue">0</strong></div>
+        <div class="resource-tile"><span>Железо</span><strong id="ironValue">0</strong></div>
+        <div class="resource-tile"><span>Люди</span><strong id="peopleValue">0</strong></div>
+      </div>
+
+      <div class="expedition-body">
+        <div class="site-grid" id="siteGrid"></div>
+        <aside class="mission-sidebar">
+          <div class="mission-controls">
+            <button class="primary" id="returnButton">Вернуться за стену</button>
+            <button class="secondary" id="restartMissionButton">Новая вылазка</button>
+          </div>
+          <div class="mission-log">
+            <h3>Журнал</h3>
+            <ul id="missionLog"></ul>
+          </div>
+          <div class="mission-report" id="missionReport">
+            <h3>Отчет</h3>
+            <p id="reportText"></p>
+          </div>
+        </aside>
+      </div>
     </section>
   </main>
 
@@ -1074,8 +1338,55 @@
       players: [],
       currentPlayer: null,
       apiReady: false,
-      pending: false
+      pending: false,
+      mission: null
     };
+
+    const resourceLabels = {
+      food: "Еда",
+      wood: "Дерево",
+      stone: "Камень",
+      iron: "Железо",
+      people: "Люди"
+    };
+
+    const expeditionSites = [
+      {
+        id: "foodDepot",
+        title: "Склад провианта",
+        text: "Полуразрушенный склад у старой дороги. Быстрая добыча еды, но шум может привлечь титана.",
+        reward: { food: 25 },
+        risk: 5
+      },
+      {
+        id: "sawmill",
+        title: "Лесопилка",
+        text: "Сухие балки и доски еще можно вывезти. Путь проходит через густую посадку.",
+        reward: { wood: 20 },
+        risk: 10
+      },
+      {
+        id: "quarry",
+        title: "Каменоломня",
+        text: "Тяжелый камень для укреплений. Сбор медленный, зато ресурс надежный.",
+        reward: { stone: 20 },
+        risk: 10
+      },
+      {
+        id: "forge",
+        title: "Старая кузница",
+        text: "Внутри могут остаться слитки и инструменты. Место открытое и опасное.",
+        reward: { iron: 15 },
+        risk: 18
+      },
+      {
+        id: "village",
+        title: "Разрушенная деревня",
+        text: "Есть шанс найти выживших. Риск самый высокий, зато люди ценнее любого груза.",
+        reward: { people: 2, food: 5 },
+        risk: 20
+      }
+    ];
 
     const els = {
       cards: document.getElementById("cards"),
@@ -1103,7 +1414,22 @@
       missionTitle: document.getElementById("missionTitle"),
       missionText: document.getElementById("missionText"),
       closeOverlay: document.getElementById("closeOverlay"),
-      confirmButton: document.getElementById("confirmButton")
+      confirmButton: document.getElementById("confirmButton"),
+      expeditionPanel: document.getElementById("expeditionPanel"),
+      siteGrid: document.getElementById("siteGrid"),
+      actionsLeft: document.getElementById("actionsLeft"),
+      riskBar: document.getElementById("riskBar"),
+      riskValue: document.getElementById("riskValue"),
+      foodValue: document.getElementById("foodValue"),
+      woodValue: document.getElementById("woodValue"),
+      stoneValue: document.getElementById("stoneValue"),
+      ironValue: document.getElementById("ironValue"),
+      peopleValue: document.getElementById("peopleValue"),
+      missionLog: document.getElementById("missionLog"),
+      missionReport: document.getElementById("missionReport"),
+      reportText: document.getElementById("reportText"),
+      returnButton: document.getElementById("returnButton"),
+      restartMissionButton: document.getElementById("restartMissionButton")
     };
 
     function selectedCharacter() {
@@ -1236,6 +1562,143 @@
       renderControls();
       renderCards();
       renderPreview();
+      renderMission();
+    }
+
+    function createMissionState() {
+      return {
+        active: true,
+        finished: false,
+        actions: 6,
+        risk: 10,
+        resources: { food: 0, wood: 0, stone: 0, iron: 0, people: 0 },
+        log: ["Отряд вышел за стену. Нужно успеть собрать припасы и вернуться."],
+        report: ""
+      };
+    }
+
+    function totalResources(resources = state.mission?.resources) {
+      if (!resources) return 0;
+      return resources.food + resources.wood + resources.stone + resources.iron + resources.people * 20;
+    }
+
+    function formatReward(reward) {
+      return Object.entries(reward)
+        .map(([key, value]) => `+${value} ${resourceLabels[key]}`)
+        .join(" · ");
+    }
+
+    function renderMission() {
+      const mission = state.mission;
+      els.expeditionPanel.classList.toggle("open", Boolean(mission));
+      if (!mission) return;
+
+      els.actionsLeft.textContent = mission.actions;
+      els.riskValue.textContent = `${mission.risk}%`;
+      els.riskBar.style.width = `${Math.min(mission.risk, 100)}%`;
+      els.foodValue.textContent = mission.resources.food;
+      els.woodValue.textContent = mission.resources.wood;
+      els.stoneValue.textContent = mission.resources.stone;
+      els.ironValue.textContent = mission.resources.iron;
+      els.peopleValue.textContent = mission.resources.people;
+
+      els.siteGrid.innerHTML = "";
+      expeditionSites.forEach(site => {
+        const button = document.createElement("button");
+        button.className = "site-card";
+        button.type = "button";
+        button.disabled = mission.finished || mission.actions <= 0;
+        button.innerHTML = `
+          <span class="tag">${site.risk}% риск</span>
+          <h3>${site.title}</h3>
+          <p>${site.text}</p>
+          <div class="site-reward">${Object.entries(site.reward).map(([key, value]) => `<span>+${value} ${resourceLabels[key]}</span>`).join("")}</div>
+        `;
+        button.addEventListener("click", () => gatherSite(site));
+        els.siteGrid.appendChild(button);
+      });
+
+      els.missionLog.innerHTML = mission.log.slice(-6).map(entry => `<li>${entry}</li>`).join("");
+      els.missionReport.classList.toggle("open", mission.finished);
+      els.reportText.innerHTML = mission.report;
+      els.returnButton.disabled = mission.finished;
+    }
+
+    function beginMission() {
+      state.mission = createMissionState();
+      els.startOverlay.classList.remove("open");
+      renderMission();
+      els.expeditionPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function gatherSite(site) {
+      const mission = state.mission;
+      if (!mission || mission.finished || mission.actions <= 0) return;
+
+      Object.entries(site.reward).forEach(([key, value]) => {
+        mission.resources[key] += value;
+      });
+
+      mission.actions -= 1;
+      mission.risk = Math.min(95, mission.risk + site.risk);
+      mission.log.push(`${site.title}: ${formatReward(site.reward)}. Риск вырос до ${mission.risk}%.`);
+      resolveExpeditionEvent(site);
+
+      if (mission.actions <= 0 && !mission.finished) {
+        mission.log.push("Солнце уходит за стену. Пора возвращаться.");
+        finishMission();
+      }
+
+      renderMission();
+    }
+
+    function resolveExpeditionEvent(site) {
+      const mission = state.mission;
+      const roll = Math.random() * 100;
+
+      if (roll < mission.risk * .28) {
+        const foodLoss = Math.min(mission.resources.food, 8);
+        mission.resources.food -= foodLoss;
+        mission.risk = Math.min(95, mission.risk + 8);
+        mission.log.push(`Замечены следы титана. Отряд ускорился, потеряно ${foodLoss} Еды, риск +8%.`);
+        return;
+      }
+
+      if (site.id === "village" && Math.random() > .55) {
+        mission.resources.people += 1;
+        mission.risk = Math.min(95, mission.risk + 6);
+        mission.log.push("В подвале найден еще один выживший. +1 Люди, риск +6%.");
+        return;
+      }
+
+      if (Math.random() > .72) {
+        mission.resources.iron += 4;
+        mission.log.push("Найден небольшой тайник с деталями УПМ. +4 Железо.");
+      }
+    }
+
+    function finishMission() {
+      const mission = state.mission;
+      if (!mission || mission.finished) return;
+
+      mission.finished = true;
+      const score = totalResources();
+      const returnedRisk = Math.max(5, Math.round(mission.risk * .45));
+      const safeReturn = Math.random() * 100 >= returnedRisk;
+
+      if (!safeReturn) {
+        const peopleLoss = Math.min(mission.resources.people, 1);
+        mission.resources.people -= peopleLoss;
+        mission.resources.food = Math.max(0, mission.resources.food - 10);
+        mission.log.push("На обратном пути отряд попал в опасную зону. Часть припасов потеряна.");
+      } else {
+        mission.log.push("Отряд вернулся за стену без потерь.");
+      }
+
+      const finalScore = totalResources();
+      const grade = !safeReturn ? "C" : finalScore >= 90 ? "S" : finalScore >= 70 ? "A" : finalScore >= 50 ? "B" : "C";
+      mission.report = `<strong>Оценка: ${grade}</strong><br>Собрано ресурсов: ${finalScore}. Спасено людей: ${mission.resources.people}. Риск на возвращении: ${returnedRisk}%.`;
+      renderMission();
     }
 
     function saveState() {
@@ -1356,7 +1819,8 @@
       els.missionCover.style.setProperty("--selected-b", character.colors[1]);
       els.missionMode.textContent = state.mode;
       els.missionTitle.textContent = `${name} / ${character.name}`;
-      els.missionText.textContent = `Профиль сохранен на сервере: режим "${state.mode}", обложка "${character.name}", роль "${character.role}". Другие игроки не смогут занять эту учетку.`;
+      els.missionText.textContent = `Профиль сохранен. Первая задача: выйти к аванпосту снабжения, собрать Еду, Дерево, Камень, Железо и по возможности вывести Людей за стену.`;
+      els.confirmButton.textContent = "Начать миссию";
       els.startOverlay.classList.add("open");
       els.closeOverlay.focus();
     }
@@ -1408,8 +1872,14 @@
     });
 
     els.confirmButton.addEventListener("click", () => {
-      els.startOverlay.classList.remove("open");
-      els.hint.textContent = "Заготовка готова: следующий экран можно сделать уже как игровую миссию.";
+      beginMission();
+    });
+
+    els.returnButton.addEventListener("click", finishMission);
+
+    els.restartMissionButton.addEventListener("click", () => {
+      state.mission = createMissionState();
+      renderMission();
     });
 
     document.addEventListener("keydown", event => {
