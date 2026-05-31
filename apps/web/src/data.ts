@@ -82,6 +82,14 @@ export const buildingOptions = [
   { id: "garrison", name: "Гарнизон", produces: null, amount: 0, period: 0, cost: { stone: 20, iron: 8, people: 3 }, description: "Подготовка обороны стены Сина." }
 ];
 
+export const gateBuildingOptions = [
+  { id: "church", name: "Церковь стен", produces: "people" as ResourceKey, amount: 1, period: 180, cost: { stone: 25, wood: 15, people: 3 }, description: "Поддерживает жителей. +1 Люди каждые 180 секунд, риск возвращения вылазки -4%." },
+  { id: "academy", name: "Дом ученых", produces: null, amount: 0, period: 0, cost: { wood: 25, iron: 12, people: 4 }, description: "Исследует маршруты. +1 действие в вылазке, риск точек -2%." },
+  { id: "infirmary", name: "Лазарет", produces: "people" as ResourceKey, amount: 1, period: 160, cost: { food: 25, wood: 20, people: 3 }, description: "Возвращает бойцов в строй. +1 Люди каждые 160 секунд, риск возвращения -6%." },
+  { id: "quartermaster", name: "Интендантство", produces: null, amount: 0, period: 0, cost: { food: 30, wood: 20, iron: 6 }, description: "Готовит обозы. +1 действие в вылазке." },
+  { id: "engineers", name: "Инженерный двор", produces: null, amount: 0, period: 0, cost: { stone: 25, iron: 14, people: 4 }, description: "Укрепляет ворота. Риск точек -3%, риск возвращения -3%." }
+];
+
 export const expeditionSites = [
   { id: "foodDepot", title: "Склад провианта", reward: { food: 25 }, risk: 5 },
   { id: "sawmill", title: "Лесопилка", reward: { wood: 20 }, risk: 10 },

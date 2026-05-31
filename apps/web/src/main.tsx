@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { loadState, loginPlayer, saveCity, savePlayer } from "./api";
-import { buildingOptions, characters, expeditionSites, resourceLabels } from "./data";
+import { buildingOptions, characters, expeditionSites, gateBuildingOptions, resourceLabels } from "./data";
 import type { Character, CityState, MissionState, Player, ResourceKey } from "./types";
 import "./styles.css";
 
@@ -14,6 +14,7 @@ const mapDistricts = [
 ];
 
 const titanMarkers = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
+const gateNames = ["Северные ворота", "Восточные ворота", "Южные ворота", "Западные ворота"];
 
 const statLabels = [
   ["speed", "Скор."],
@@ -25,8 +26,22 @@ function defaultCityState(): CityState {
   return {
     resources: { food: 120, wood: 70, stone: 40, iron: 25, people: 18 },
     cells: Array.from({ length: 9 }, (_, index) => ({ id: `sina-${index + 1}`, buildingId: null })),
+    gateCells: ["north", "east", "south", "west"].map(gate => ({ id: `gate-${gate}`, buildingId: null })),
     unlockedWalls: ["sina"],
     lastTickAt: new Date().toISOString()
+  };
+}
+
+function normalizeCityState(city: Partial<CityState> | null | undefined): CityState {
+  const defaults = defaultCityState();
+  const cells = Array.isArray(city?.cells) ? city.cells : defaults.cells;
+  const gateCells = Array.isArray(city?.gateCells) ? city.gateCells : defaults.gateCells;
+  return {
+    resources: city?.resources || defaults.resources,
+    cells,
+    gateCells: defaults.gateCells.map(defaultCell => gateCells.find(cell => cell.id === defaultCell.id) || defaultCell),
+    unlockedWalls: Array.isArray(city?.unlockedWalls) ? city.unlockedWalls : defaults.unlockedWalls,
+    lastTickAt: city?.lastTickAt || defaults.lastTickAt
   };
 }
 
@@ -84,7 +99,7 @@ function App() {
           setName(payload.currentPlayer.name);
           setSelectedId(payload.currentPlayer.characterId);
           setMode(payload.currentPlayer.mode);
-          setCity(applyProduction(payload.currentPlayer.cityState || defaultCityState()));
+          setCity(applyProduction(normalizeCityState(payload.currentPlayer.cityState)));
           setScreen("city");
           setMessage("Профиль загружен.");
         } else {
@@ -120,7 +135,7 @@ function App() {
       const payload = await savePlayer({ token, name, password, characterId: selectedId, mode });
       setToken(payload.token);
       setPlayer(payload.player);
-      setCity(applyProduction(payload.player.cityState || defaultCityState()));
+      setCity(applyProduction(normalizeCityState(payload.player.cityState)));
       setScreen("city");
       setPassword("");
       setMessage("Профиль сохранен. Добро пожаловать в столицу.");
@@ -139,7 +154,7 @@ function App() {
       setPlayer(payload.player);
       setSelectedId(payload.player.characterId);
       setMode(payload.player.mode);
-      setCity(applyProduction(payload.player.cityState || defaultCityState()));
+      setCity(applyProduction(normalizeCityState(payload.player.cityState)));
       setScreen("city");
       setPassword("");
       setMessage("Вход выполнен. Сессия сохранена в этом браузере.");
@@ -151,7 +166,8 @@ function App() {
   }
 
   function build(cellId: string, buildingId: string) {
-    const option = buildingOptions.find(item => item.id === buildingId);
+    const isGateCell = cellId.startsWith("gate-");
+    const option = (isGateCell ? gateBuildingOptions : buildingOptions).find(item => item.id === buildingId);
     if (!option) return;
     if (!canPay(city, option.cost)) return setMessage("Не хватает ресурсов для строительства.");
 
@@ -159,6 +175,7 @@ function App() {
       ...current,
       resources: pay(current.resources, option.cost),
       cells: current.cells.map(cell => cell.id === cellId ? { ...cell, buildingId } : cell),
+      gateCells: current.gateCells.map(cell => cell.id === cellId ? { ...cell, buildingId } : cell),
       lastTickAt: new Date().toISOString()
     }));
     setMessage(`${option.name} построено.`);
@@ -352,6 +369,8 @@ function CityScreen(props: {
 }) {
   const builtCells = props.city.cells.filter(cell => cell.buildingId).length;
   const freeCells = props.city.cells.length - builtCells;
+  const builtGateCells = props.city.gateCells.filter(cell => cell.buildingId).length;
+  const freeGateCells = props.city.gateCells.length - builtGateCells;
   const hasMission = Boolean(props.mission?.active && !props.mission.finished);
 
   return (
@@ -380,7 +399,7 @@ function CityScreen(props: {
             <div className="map-metrics">
               <span><b>{builtCells}</b> построено</span>
               <span><b>{freeCells}</b> свободно</span>
-              <span><b>{props.city.cells.length}</b> участков</span>
+              <span><b>{builtGateCells}/{props.city.gateCells.length}</b> у ворот</span>
             </div>
           </div>
           <div className="map-scroll" aria-label="Схема города и стен">
@@ -412,6 +431,19 @@ function CityScreen(props: {
                     key={cell.id}
                     cell={cell}
                     index={index}
+                    options={buildingOptions}
+                    resources={props.city.resources}
+                    onBuild={props.onBuild}
+                  />
+                ))}
+                {props.city.gateCells.map((cell, index) => (
+                  <MapBuildSlot
+                    key={cell.id}
+                    cell={cell}
+                    index={index}
+                    options={gateBuildingOptions}
+                    className={`gate-plot gate-plot-${index + 1}`}
+                    label={gateNames[index]}
                     resources={props.city.resources}
                     onBuild={props.onBuild}
                   />
@@ -435,7 +467,26 @@ function CityScreen(props: {
             <span>{freeCells ? `${freeCells} ожидают приказа` : "все участки заняты"}</span>
           </div>
           <div className="cells">
-            {props.city.cells.map(cell => <BuildCell key={cell.id} cell={cell} resources={props.city.resources} onBuild={props.onBuild} />)}
+            {props.city.cells.map(cell => <BuildCell key={cell.id} cell={cell} options={buildingOptions} resources={props.city.resources} onBuild={props.onBuild} />)}
+          </div>
+          <div className="cells-head gate-cells-head">
+            <div>
+              <span className="eyebrow">Пристройки у ворот</span>
+              <strong>Значимые здания</strong>
+            </div>
+            <span>{freeGateCells ? `${freeGateCells} зоны свободны` : "все ворота заняты"}</span>
+          </div>
+          <div className="cells gate-cells">
+            {props.city.gateCells.map((cell, index) => (
+              <BuildCell
+                key={cell.id}
+                cell={cell}
+                title={gateNames[index]}
+                options={gateBuildingOptions}
+                resources={props.city.resources}
+                onBuild={props.onBuild}
+              />
+            ))}
           </div>
         </div>
 
@@ -486,21 +537,23 @@ function ResourceBar({ resources }: { resources: Record<ResourceKey, number> }) 
   );
 }
 
-function BuildCell({ cell, resources, onBuild }: { cell: { id: string; buildingId: string | null }; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
-  const building = buildingOptions.find(option => option.id === cell.buildingId);
+function BuildCell({ cell, title, options, resources, onBuild }: { cell: { id: string; buildingId: string | null }; title?: string; options: typeof buildingOptions | typeof gateBuildingOptions; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
+  const building = options.find(option => option.id === cell.buildingId);
   return (
     <div className="build-cell">
       {building ? (
         <>
+          {title && <small>{title}</small>}
           <strong>{building.name}</strong>
           <span>{building.description}</span>
         </>
       ) : (
         <>
-          <strong>Свободная ячейка</strong>
+          {title && <small>{title}</small>}
+          <strong>{title ? "Свободная пристройка" : "Свободная ячейка"}</strong>
           <select defaultValue="" onChange={event => event.target.value && onBuild(cell.id, event.target.value)}>
             <option value="" disabled>Построить...</option>
-            {buildingOptions.map(option => (
+            {options.map(option => (
               <option key={option.id} value={option.id} disabled={!canPayResources(resources, option.cost)}>
                 {option.name} · {formatCost(option.cost)}
               </option>
@@ -513,10 +566,10 @@ function BuildCell({ cell, resources, onBuild }: { cell: { id: string; buildingI
   );
 }
 
-function MapBuildSlot({ cell, index, resources, onBuild }: { cell: { id: string; buildingId: string | null }; index: number; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
-  const building = buildingOptions.find(option => option.id === cell.buildingId);
+function MapBuildSlot({ cell, index, options, className = "", label, resources, onBuild }: { cell: { id: string; buildingId: string | null }; index: number; options: typeof buildingOptions | typeof gateBuildingOptions; className?: string; label?: string; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
+  const building = options.find(option => option.id === cell.buildingId);
   return (
-    <div className={`map-build-slot plot-${index + 1} ${building ? `built building-${building.id}` : "empty"}`}>
+    <div className={`map-build-slot plot-${index + 1} ${className} ${building ? `built building-${building.id}` : "empty"}`}>
       {building ? (
         <>
           <strong>{building.name}</strong>
@@ -524,15 +577,15 @@ function MapBuildSlot({ cell, index, resources, onBuild }: { cell: { id: string;
         </>
       ) : (
         <>
-          <span className="plot-index">#{index + 1}</span>
-          <strong>Пустой участок</strong>
+          <span className="plot-index">{label ? "Ворота" : `#${index + 1}`}</span>
+          <strong>{label || "Пустой участок"}</strong>
           <select
             defaultValue=""
-            aria-label={`Построить здание на участке ${index + 1}`}
+            aria-label={`Построить здание: ${label || `участок ${index + 1}`}`}
             onChange={event => event.target.value && onBuild(cell.id, event.target.value)}
           >
             <option value="" disabled>Построить...</option>
-            {buildingOptions.map(option => (
+            {options.map(option => (
               <option key={option.id} value={option.id} disabled={!canPayResources(resources, option.cost)}>
                 {option.name} · {formatCost(option.cost)}
               </option>
@@ -550,8 +603,8 @@ function ProductionSummary({ city }: { city: CityState }) {
     return acc;
   }, { food: 0, wood: 0, stone: 0, iron: 0, people: 0 });
 
-  city.cells.forEach(cell => {
-    const building = buildingOptions.find(option => option.id === cell.buildingId && option.produces);
+  allCityCells(city).forEach(cell => {
+    const building = allBuildingOptions().find(option => option.id === cell.buildingId && option.produces);
     if (!building?.produces) return;
     rates[building.produces] += Math.round((building.amount * 3600) / building.period);
   });
@@ -568,7 +621,7 @@ function ProductionSummary({ city }: { city: CityState }) {
 function BuildingCatalog({ resources }: { resources: Record<ResourceKey, number> }) {
   return (
     <div className="building-catalog">
-      {buildingOptions.map(option => (
+      {[...buildingOptions, ...gateBuildingOptions].map(option => (
         <article key={option.id} className={canPayResources(resources, option.cost) ? "" : "unavailable"}>
           <strong>{option.name}</strong>
           <span>{option.description}</span>
@@ -594,17 +647,18 @@ function Mission({ mission, onGather, onFinish, onRestart }: { mission: MissionS
 }
 
 function applyProduction(city: CityState): CityState {
+  const normalizedCity = normalizeCityState(city);
   const now = Date.now();
-  const last = new Date(city.lastTickAt).getTime();
-  if (!Number.isFinite(last)) return { ...city, lastTickAt: new Date(now).toISOString() };
+  const last = new Date(normalizedCity.lastTickAt).getTime();
+  if (!Number.isFinite(last)) return { ...normalizedCity, lastTickAt: new Date(now).toISOString() };
   const elapsed = Math.floor((now - last) / 1000);
-  if (elapsed <= 0) return city;
+  if (elapsed <= 0) return normalizedCity;
 
-  const resources = { ...city.resources };
+  const resources = { ...normalizedCity.resources };
   let consumedSeconds = 0;
   let hasProduction = false;
-  city.cells.forEach(cell => {
-    const building = buildingOptions.find(option => option.id === cell.buildingId && option.produces);
+  allCityCells(normalizedCity).forEach(cell => {
+    const building = allBuildingOptions().find(option => option.id === cell.buildingId && option.produces);
     if (!building || !building.produces) return;
     hasProduction = true;
     const ticks = Math.floor(elapsed / building.period);
@@ -615,10 +669,10 @@ function applyProduction(city: CityState): CityState {
   });
 
   if (!hasProduction) {
-    return { ...city, lastTickAt: new Date(now).toISOString() };
+    return { ...normalizedCity, lastTickAt: new Date(now).toISOString() };
   }
 
-  return { ...city, resources, lastTickAt: new Date(last + consumedSeconds * 1000).toISOString() };
+  return { ...normalizedCity, resources, lastTickAt: new Date(last + consumedSeconds * 1000).toISOString() };
 }
 
 function finishMissionState(mission: MissionState): MissionState {
@@ -634,18 +688,36 @@ function finishMissionState(mission: MissionState): MissionState {
 }
 
 function getExpeditionBonuses(city?: CityState) {
-  const ids = new Set(city?.cells.map(cell => cell.buildingId).filter(Boolean));
+  const ids = new Set(city ? allCityCells(normalizeCityState(city)).map(cell => cell.buildingId).filter(Boolean) : []);
   const scouts = ids.has("scouts");
   const garrison = ids.has("garrison");
-  const actions = 6 + (scouts ? 1 : 0);
-  const riskReduction = scouts ? 4 : 0;
-  const returnRiskReduction = garrison ? 8 : 0;
+  const church = ids.has("church");
+  const academy = ids.has("academy");
+  const infirmary = ids.has("infirmary");
+  const quartermaster = ids.has("quartermaster");
+  const engineers = ids.has("engineers");
+  const actions = 6 + (scouts ? 1 : 0) + (academy ? 1 : 0) + (quartermaster ? 1 : 0);
+  const riskReduction = (scouts ? 4 : 0) + (academy ? 2 : 0) + (engineers ? 3 : 0);
+  const returnRiskReduction = (garrison ? 8 : 0) + (church ? 4 : 0) + (infirmary ? 6 : 0) + (engineers ? 3 : 0);
   const summary = [
     scouts ? "Корпус разведки: +1 действие, риск точек -4%." : "",
-    garrison ? "Гарнизон: риск возвращения -8%." : ""
+    garrison ? "Гарнизон: риск возвращения -8%." : "",
+    church ? "Церковь стен: риск возвращения -4%." : "",
+    academy ? "Дом ученых: +1 действие, риск точек -2%." : "",
+    infirmary ? "Лазарет: риск возвращения -6%." : "",
+    quartermaster ? "Интендантство: +1 действие." : "",
+    engineers ? "Инженерный двор: риск точек -3%, риск возвращения -3%." : ""
   ].filter(Boolean).join(" ");
 
   return { actions, riskReduction, returnRiskReduction, summary };
+}
+
+function allCityCells(city: CityState) {
+  return [...city.cells, ...city.gateCells];
+}
+
+function allBuildingOptions() {
+  return [...buildingOptions, ...gateBuildingOptions];
 }
 
 function canPay(city: CityState, cost: Partial<Record<ResourceKey, number>>) {

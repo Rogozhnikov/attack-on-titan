@@ -27,6 +27,7 @@ const modes = new Set(["История", "Арена", "Выживание"]);
 type CityState = {
   resources: Record<"food" | "wood" | "stone" | "iron" | "people", number>;
   cells: Array<{ id: string; buildingId: string | null }>;
+  gateCells: Array<{ id: string; buildingId: string | null }>;
   unlockedWalls: string[];
   lastTickAt: string;
 };
@@ -68,8 +69,22 @@ function defaultCityState(): CityState {
   return {
     resources: { food: 120, wood: 70, stone: 40, iron: 25, people: 18 },
     cells: Array.from({ length: 9 }, (_, index) => ({ id: `sina-${index + 1}`, buildingId: null })),
+    gateCells: ["north", "east", "south", "west"].map(gate => ({ id: `gate-${gate}`, buildingId: null })),
     unlockedWalls: ["sina"],
     lastTickAt: new Date().toISOString()
+  };
+}
+
+function normalizeCityState(cityState: Partial<CityState> | null | undefined): CityState {
+  const defaults = defaultCityState();
+  const cells = Array.isArray(cityState?.cells) ? cityState.cells : defaults.cells;
+  const gateCells = Array.isArray(cityState?.gateCells) ? cityState.gateCells : defaults.gateCells;
+  return {
+    resources: cityState?.resources || defaults.resources,
+    cells,
+    gateCells: defaults.gateCells.map(defaultCell => gateCells.find(cell => cell.id === defaultCell.id) || defaultCell),
+    unlockedWalls: Array.isArray(cityState?.unlockedWalls) ? cityState.unlockedWalls : defaults.unlockedWalls,
+    lastTickAt: cityState?.lastTickAt || defaults.lastTickAt
   };
 }
 
@@ -205,7 +220,7 @@ class JsonStore implements Store {
     const store = await this.read();
     const player = store.players.find(item => item.token === token);
     if (!player) return null;
-    player.cityState = cityState;
+    player.cityState = normalizeCityState(cityState);
     player.updatedAt = new Date().toISOString();
     await this.write(store);
     return player;
@@ -308,7 +323,7 @@ class PostgresStore implements Store {
   async saveCity(token: string, cityState: CityState) {
     const result = await this.pool.query(
       "UPDATE players SET city_state = $2, updated_at = $3 WHERE token = $1 RETURNING *",
-      [token, JSON.stringify(cityState), new Date().toISOString()]
+      [token, JSON.stringify(normalizeCityState(cityState)), new Date().toISOString()]
     );
     return result.rows[0] ? rowToPlayer(result.rows[0]) : null;
   }
@@ -325,7 +340,7 @@ function rowToPlayer(row: any): Player {
     passwordSalt: row.password_salt || null,
     passwordHash: row.password_hash || null,
     passwordParams: row.password_params || null,
-    cityState: row.city_state || defaultCityState(),
+    cityState: normalizeCityState(row.city_state),
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at
   };
