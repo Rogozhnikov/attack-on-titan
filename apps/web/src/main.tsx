@@ -16,14 +16,20 @@ function defaultCityState(): CityState {
   };
 }
 
-function createMissionState(): MissionState {
+function createMissionState(city?: CityState): MissionState {
+  const bonuses = getExpeditionBonuses(city);
   return {
     active: true,
     finished: false,
-    actions: 6,
-    risk: 10,
+    actions: bonuses.actions,
+    maxActions: bonuses.actions,
+    risk: Math.max(5, 10 - bonuses.riskReduction),
+    returnRiskBonus: bonuses.returnRiskReduction,
     resources: { food: 0, wood: 0, stone: 0, iron: 0, people: 0 },
-    log: ["Отряд вышел за стену. Нужно собрать ресурсы и вернуться."],
+    log: [
+      "Отряд вышел за стену. Нужно собрать ресурсы и вернуться.",
+      bonuses.summary
+    ].filter(Boolean),
     report: ""
   };
 }
@@ -145,7 +151,7 @@ function App() {
   }
 
   function startExpedition() {
-    setMission(createMissionState());
+    setMission(createMissionState(city));
   }
 
   function gather(site: typeof expeditionSites[number]) {
@@ -155,24 +161,33 @@ function App() {
       next.resources[key as ResourceKey] += value;
     });
     next.actions -= 1;
-    next.risk = Math.min(95, next.risk + site.risk);
+    const bonuses = getExpeditionBonuses(city);
+    next.risk = Math.min(95, next.risk + Math.max(3, site.risk - bonuses.riskReduction));
     next.log.push(`${site.title}: добыто ${formatReward(site.reward)}.`);
     if (site.id === "village" && Math.random() > 0.55) {
       next.resources.people += 1;
       next.log.push("Найден еще один выживший. +1 Люди.");
     }
-    setMission(next.actions <= 0 ? finishMissionState(next) : next);
+    if (next.actions <= 0) {
+      completeExpedition(next);
+    } else {
+      setMission(next);
+    }
   }
 
   function finishExpedition() {
     if (!mission) return;
-    const finished = finishMissionState(mission);
+    completeExpedition(mission);
+  }
+
+  function completeExpedition(baseMission: MissionState) {
+    const finished = finishMissionState(baseMission);
     setMission(finished);
     setCity(current => ({
       ...current,
       resources: addResources(current.resources, finished.resources)
     }));
-    setMessage("Отряд вернулся. Добыча отправлена в город.");
+    setMessage("Отряд вернулся. Добыча отправлена в город и будет сохранена.");
   }
 
   return (
@@ -445,7 +460,7 @@ function Mission({ mission, onGather, onFinish, onRestart }: { mission: MissionS
   return (
     <div className="mission-box">
       <h3>Вылазка 01: Аванпост</h3>
-      <p>Действий: {mission.actions} · Риск: {mission.risk}%</p>
+      <p>Действий: {mission.actions}/{mission.maxActions} · Риск: {mission.risk}% · Бонус возвращения: -{mission.returnRiskBonus}%</p>
       <div className="mission-sites">{expeditionSites.map(site => <button key={site.id} disabled={mission.finished || mission.actions <= 0} onClick={() => onGather(site)}>{site.title}<span>{formatReward(site.reward)}</span></button>)}</div>
       <button className="secondary" disabled={mission.finished} onClick={onFinish}>Вернуться за стену</button>
       <button className="secondary" onClick={onRestart}>Новая вылазка</button>
@@ -486,12 +501,28 @@ function applyProduction(city: CityState): CityState {
 function finishMissionState(mission: MissionState): MissionState {
   const score = Object.entries(mission.resources).reduce((sum, [key, value]) => sum + value * (key === "people" ? 20 : 1), 0);
   const grade = score >= 90 ? "S" : score >= 70 ? "A" : score >= 50 ? "B" : "C";
+  const returnRisk = Math.max(5, Math.round(mission.risk * .45) - mission.returnRiskBonus);
   return {
     ...mission,
     finished: true,
-    report: `Оценка ${grade}. Собрано ресурсов: ${score}. Людей выведено: ${mission.resources.people}.`,
-    log: [...mission.log, "Отряд вернулся за стену."]
+    report: `Оценка ${grade}. Собрано ресурсов: ${score}. Людей выведено: ${mission.resources.people}. Риск возвращения: ${returnRisk}%.`,
+    log: [...mission.log, `Отряд вернулся за стену. Риск возвращения: ${returnRisk}%.`]
   };
+}
+
+function getExpeditionBonuses(city?: CityState) {
+  const ids = new Set(city?.cells.map(cell => cell.buildingId).filter(Boolean));
+  const scouts = ids.has("scouts");
+  const garrison = ids.has("garrison");
+  const actions = 6 + (scouts ? 1 : 0);
+  const riskReduction = scouts ? 4 : 0;
+  const returnRiskReduction = garrison ? 8 : 0;
+  const summary = [
+    scouts ? "Корпус разведки: +1 действие, риск точек -4%." : "",
+    garrison ? "Гарнизон: риск возвращения -8%." : ""
+  ].filter(Boolean).join(" ");
+
+  return { actions, riskReduction, returnRiskReduction, summary };
 }
 
 function canPay(city: CityState, cost: Partial<Record<ResourceKey, number>>) {

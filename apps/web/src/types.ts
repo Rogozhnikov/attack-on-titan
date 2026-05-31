@@ -34,7 +34,9 @@ export type MissionState = {
   active: boolean;
   finished: boolean;
   actions: number;
+  maxActions: number;
   risk: number;
+  returnRiskBonus: number;
   resources: Record<ResourceKey, number>;
   log: string[];
   report: string;
