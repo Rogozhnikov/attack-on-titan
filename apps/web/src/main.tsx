@@ -15,6 +15,12 @@ const mapDistricts = [
 
 const titanMarkers = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
 
+const statLabels = [
+  ["speed", "Скор."],
+  ["tactic", "Так."],
+  ["will", "Воля"]
+] as const;
+
 function defaultCityState(): CityState {
   return {
     resources: { food: 120, wood: 70, stone: 40, iron: 25, people: 18 },
@@ -344,6 +350,10 @@ function CityScreen(props: {
   onFinishMission: () => void;
   onRestartMission: () => void;
 }) {
+  const builtCells = props.city.cells.filter(cell => cell.buildingId).length;
+  const freeCells = props.city.cells.length - builtCells;
+  const hasMission = Boolean(props.mission?.active && !props.mission.finished);
+
   return (
     <>
       <section className="city-hero">
@@ -352,13 +362,27 @@ function CityScreen(props: {
           <h1>Столица внутри стены Сина</h1>
           <p>{props.player?.name} / {props.character.name}. Внешние стены Роза и Мария пока закрыты: сначала укрепи внутреннюю столицу.</p>
         </div>
-        <button className="secondary" onClick={() => props.setScreen("setup")}>К ростеру</button>
+        <div className="city-actions">
+          <span className={hasMission ? "mission-pill active" : "mission-pill"}>{hasMission ? "вылазка активна" : "отряд в городе"}</span>
+          <button className="secondary" onClick={() => props.setScreen("setup")}>К ростеру</button>
+        </div>
       </section>
 
       <ResourceBar resources={props.city.resources} />
 
       <section className="city-layout">
         <div className="map-panel">
+          <div className="map-toolbar">
+            <div>
+              <span className="eyebrow">Стена Сина</span>
+              <strong>Центр управления городом</strong>
+            </div>
+            <div className="map-metrics">
+              <span><b>{builtCells}</b> построено</span>
+              <span><b>{freeCells}</b> свободно</span>
+              <span><b>{props.city.cells.length}</b> участков</span>
+            </div>
+          </div>
           <div className="map-scroll" aria-label="Схема города и стен">
             <div className="wall-map">
               <div className="map-legend">
@@ -403,13 +427,21 @@ function CityScreen(props: {
               <div className="outer-caption">Внешняя территория титанов</div>
             </div>
           </div>
+          <div className="cells-head">
+            <div>
+              <span className="eyebrow">План строительства</span>
+              <strong>Участки внутри столицы</strong>
+            </div>
+            <span>{freeCells ? `${freeCells} ожидают приказа` : "все участки заняты"}</span>
+          </div>
           <div className="cells">
             {props.city.cells.map(cell => <BuildCell key={cell.id} cell={cell} resources={props.city.resources} onBuild={props.onBuild} />)}
           </div>
         </div>
 
-        <aside className="panel">
-          <h2>Ресурсные циклы</h2>
+        <aside className="panel command-panel">
+          <div className="panel-head compact"><h2>Штаб снабжения</h2><span className="tag">MVP</span></div>
+          <h3>Ресурсные циклы</h3>
           <p className="muted">Еда: 30с. Дерево: 45с. Камень: 50с. Железо: 70с. Люди: 120с через приют или сразу через вылазки.</p>
           <ProductionSummary city={props.city} />
           <BuildingCatalog resources={props.city.resources} />
@@ -427,7 +459,11 @@ function CharacterCard({ character, selected, onClick }: { character: Character;
       <div className="portrait" />
       <strong>{character.name}</strong>
       <span>{character.squad} / {character.role}</span>
-      <div className="mini-stats"><b>{character.stats.speed}</b><b>{character.stats.tactic}</b><b>{character.stats.will}</b></div>
+      <div className="mini-stats">
+        {statLabels.map(([key, label]) => (
+          <b key={key}><span>{label}</span>{character.stats[key]}</b>
+        ))}
+      </div>
     </button>
   );
 }
@@ -437,7 +473,17 @@ function Stat({ label, value }: { label: string; value: number }) {
 }
 
 function ResourceBar({ resources }: { resources: Record<ResourceKey, number> }) {
-  return <section className="resources">{(Object.keys(resourceLabels) as ResourceKey[]).map(key => <div key={key}><span>{resourceLabels[key]}</span><strong>{resources[key]}</strong></div>)}</section>;
+  return (
+    <section className="resources">
+      {(Object.keys(resourceLabels) as ResourceKey[]).map(key => (
+        <div key={key} className={`resource-card ${key}`}>
+          <i aria-hidden="true" />
+          <span>{resourceLabels[key]}</span>
+          <strong>{resources[key]}</strong>
+        </div>
+      ))}
+    </section>
+  );
 }
 
 function BuildCell({ cell, resources, onBuild }: { cell: { id: string; buildingId: string | null }; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
@@ -478,6 +524,7 @@ function MapBuildSlot({ cell, index, resources, onBuild }: { cell: { id: string;
         </>
       ) : (
         <>
+          <span className="plot-index">#{index + 1}</span>
           <strong>Пустой участок</strong>
           <select
             defaultValue=""
