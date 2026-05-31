@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { loadState, saveCity, savePlayer } from "./api";
+import { loadState, loginPlayer, saveCity, savePlayer } from "./api";
 import { buildingOptions, characters, expeditionSites, resourceLabels } from "./data";
 import type { Character, CityState, MissionState, Player, ResourceKey } from "./types";
 import "./styles.css";
@@ -32,6 +32,8 @@ function App() {
   const saved = readLocalProfile();
   const [token, setToken] = useState(saved.token || "");
   const [name, setName] = useState(saved.name || "");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"create" | "login">("create");
   const [mode, setMode] = useState(saved.mode || "История");
   const [selectedId, setSelectedId] = useState(saved.selectedId || characters[0].id);
   const [query, setQuery] = useState("");
@@ -95,14 +97,34 @@ function App() {
   async function handleCreatePlayer() {
     setBusy(true);
     try {
-      const payload = await savePlayer({ token, name, characterId: selectedId, mode });
+      const payload = await savePlayer({ token, name, password, characterId: selectedId, mode });
       setToken(payload.token);
       setPlayer(payload.player);
       setCity(applyProduction(payload.player.cityState || defaultCityState()));
       setScreen("city");
+      setPassword("");
       setMessage("Профиль сохранен. Добро пожаловать в столицу.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Не удалось создать игрока.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLogin() {
+    setBusy(true);
+    try {
+      const payload = await loginPlayer({ name, password });
+      setToken(payload.token);
+      setPlayer(payload.player);
+      setSelectedId(payload.player.characterId);
+      setMode(payload.player.mode);
+      setCity(applyProduction(payload.player.cityState || defaultCityState()));
+      setScreen("city");
+      setPassword("");
+      setMessage("Вход выполнен. Сессия сохранена в этом браузере.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось войти.");
     } finally {
       setBusy(false);
     }
@@ -168,6 +190,10 @@ function App() {
         <SetupScreen
           name={name}
           setName={setName}
+          password={password}
+          setPassword={setPassword}
+          authMode={authMode}
+          setAuthMode={setAuthMode}
           mode={mode}
           setMode={setMode}
           selectedCharacter={selectedCharacter}
@@ -180,6 +206,7 @@ function App() {
           roles={roles}
           visibleCharacters={visibleCharacters}
           onCreate={handleCreatePlayer}
+          onLogin={handleLogin}
           busy={busy}
         />
       ) : (
@@ -203,6 +230,10 @@ function App() {
 function SetupScreen(props: {
   name: string;
   setName: (value: string) => void;
+  password: string;
+  setPassword: (value: string) => void;
+  authMode: "create" | "login";
+  setAuthMode: (value: "create" | "login") => void;
   mode: string;
   setMode: (value: string) => void;
   selectedCharacter: Character;
@@ -215,8 +246,11 @@ function SetupScreen(props: {
   roles: string[];
   visibleCharacters: Character[];
   onCreate: () => void;
+  onLogin: () => void;
   busy: boolean;
 }) {
+  const canSubmit = props.name.trim().length >= 2 && props.password.length >= (props.authMode === "create" ? 6 : 1) && !props.busy;
+
   return (
     <>
       <section className="hero">
@@ -227,24 +261,41 @@ function SetupScreen(props: {
       <section className="setup-grid">
         <aside className="panel">
           <div className="panel-head"><h2>Профиль</h2><span className="tag">{props.selectedCharacter.role}</span></div>
+          <div className="segmented auth-tabs">
+            <button className={props.authMode === "create" ? "active" : ""} onClick={() => props.setAuthMode("create")}>Создать</button>
+            <button className={props.authMode === "login" ? "active" : ""} onClick={() => props.setAuthMode("login")}>Войти</button>
+          </div>
           <label>Имя игрока</label>
           <input value={props.name} onChange={event => props.setName(event.target.value)} maxLength={24} placeholder="Например: Кадет-104" />
-          <label>Режим подготовки</label>
-          <div className="segmented">
-            {["История", "Арена", "Выживание"].map(mode => <button key={mode} className={props.mode === mode ? "active" : ""} onClick={() => props.setMode(mode)}>{mode}</button>)}
-          </div>
+          <label>Пароль</label>
+          <input value={props.password} onChange={event => props.setPassword(event.target.value)} type="password" minLength={6} placeholder={props.authMode === "create" ? "Минимум 6 символов" : "Пароль учетки"} />
+          {props.authMode === "create" && (
+            <>
+              <label>Режим подготовки</label>
+              <div className="segmented">
+                {["История", "Арена", "Выживание"].map(mode => <button key={mode} className={props.mode === mode ? "active" : ""} onClick={() => props.setMode(mode)}>{mode}</button>)}
+              </div>
+            </>
+          )}
           <div className="preview">
             <strong>{props.name || "Без имени"}</strong>
-            <span>{props.selectedCharacter.name}</span>
-            <Stat label="Скорость" value={props.selectedCharacter.stats.speed} />
-            <Stat label="Тактика" value={props.selectedCharacter.stats.tactic} />
-            <Stat label="Воля" value={props.selectedCharacter.stats.will} />
+            <span>{props.authMode === "create" ? props.selectedCharacter.name : "Вход в существующую учетку"}</span>
+            {props.authMode === "create" && (
+              <>
+                <Stat label="Скорость" value={props.selectedCharacter.stats.speed} />
+                <Stat label="Тактика" value={props.selectedCharacter.stats.tactic} />
+                <Stat label="Воля" value={props.selectedCharacter.stats.will} />
+              </>
+            )}
           </div>
-          <button className="primary" disabled={!props.name.trim() || props.busy} onClick={props.onCreate}>{props.busy ? "Сохраняю..." : "Создать игрока"}</button>
+          <button className="primary" disabled={!canSubmit} onClick={props.authMode === "create" ? props.onCreate : props.onLogin}>
+            {props.busy ? "Проверяю..." : props.authMode === "create" ? "Создать игрока" : "Войти в город"}
+          </button>
         </aside>
 
-        <section className="panel">
+        <section className={`panel ${props.authMode === "login" ? "muted-panel" : ""}`}>
           <div className="panel-head"><h2>Персонажи манги</h2><span className="tag">{props.visibleCharacters.length} доступно</span></div>
+          {props.authMode === "login" && <p className="muted login-note">При входе персонаж и город загрузятся из сохраненной учетки. Выбор ростера нужен только при создании нового игрока.</p>}
           <div className="filters">
             <input value={props.query} onChange={event => props.setQuery(event.target.value)} placeholder="Найти персонажа" />
             <div className="chips">{props.roles.map(role => <button key={role} className={props.role === role ? "active" : ""} onClick={() => props.setRole(role)}>{role}</button>)}</div>

@@ -27,8 +27,15 @@ export function loadState(token: string) {
   return request<StateResponse>(`/api/state${token ? `?token=${encodeURIComponent(token)}` : ""}`);
 }
 
-export function savePlayer(input: { token: string; name: string; characterId: string; mode: string }) {
+export function savePlayer(input: { token: string; name: string; password: string; characterId: string; mode: string }) {
   return request<PlayerResponse>("/api/players", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function loginPlayer(input: { name: string; password: string }) {
+  return request<PlayerResponse>("/api/login", {
     method: "POST",
     body: JSON.stringify(input)
   });

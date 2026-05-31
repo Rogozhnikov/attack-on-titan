@@ -199,6 +199,10 @@ select option {
   gap: 8px;
 }
 
+.auth-tabs {
+  margin-bottom: 14px;
+}
+
 .segmented button,
 .chips button,
 .secondary {
@@ -215,6 +219,15 @@ select option {
 .chips button.active {
   color: #181914;
   background: #e0d7c3;
+}
+
+.muted-panel {
+  opacity: .82;
+}
+
+.login-note {
+  margin: 0 0 14px;
+  line-height: 1.45;
 }
 
 .primary {
