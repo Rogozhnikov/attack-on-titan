@@ -7,6 +7,14 @@ import "./styles.css";
 
 const profileKey = "aotRecruitProfileV2";
 
+const mapDistricts = [
+  ["district-farm d1", "Поля"], ["district-farm d2", "Поля"], ["district-farm d3", "Поля"], ["district-farm d4", "Поля"],
+  ["district-town d5", "Поселение"], ["district-town d6", "Поселение"], ["district-town d7", "Поселение"], ["district-town d8", "Поселение"],
+  ["district-forest d9", "Лес"], ["district-forest d10", "Лес"], ["district-quarry d11", "Каменоломня"], ["district-forge d12", "Кузница"]
+];
+
+const titanMarkers = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
+
 function defaultCityState(): CityState {
   return {
     resources: { food: 120, wood: 70, stone: 40, iron: 25, people: 18 },
@@ -351,11 +359,49 @@ function CityScreen(props: {
 
       <section className="city-layout">
         <div className="map-panel">
-          <div className="wall-map">
-            <div className="wall wall-maria locked">Стена Мария</div>
-            <div className="wall wall-rose locked">Стена Роза</div>
-            <div className="wall wall-sina">Стена Сина</div>
-            <div className="capital">Столица</div>
+          <div className="map-scroll" aria-label="Схема города и стен">
+            <div className="wall-map">
+              <div className="map-legend">
+                <strong>Схема устройства города и стен</strong>
+                <span><i className="legend-icon maria" />Стена Мария</span>
+                <span><i className="legend-icon rose" />Стена Роза</span>
+                <span><i className="legend-icon sina" />Стена Сина</span>
+                <span><i className="legend-icon gate" />Ворота</span>
+                <span><i className="legend-icon capital-icon" />Столица</span>
+                <span><i className="legend-icon titan-icon" />Внешняя территория титанов</span>
+              </div>
+
+              <div className="compass"><b>N</b><span>W</span><span>E</span><em>S</em></div>
+              {titanMarkers.map(marker => <div key={marker} className={`titan-marker ${marker}`} />)}
+
+              <div className="road road-ns" />
+              <div className="road road-ew" />
+              {mapDistricts.map(([className, label]) => <div key={className} className={`district ${className}`}>{label}</div>)}
+
+              <div className="wall wall-maria locked"><span>Стена Мария</span></div>
+              <div className="wall wall-rose locked"><span>Стена Роза</span></div>
+              <div className="wall wall-sina"><span>Стена Сина</span></div>
+
+              <div className="map-build-plots" aria-label="Участки строительства внутри стены Сина">
+                {props.city.cells.map((cell, index) => (
+                  <MapBuildSlot
+                    key={cell.id}
+                    cell={cell}
+                    index={index}
+                    resources={props.city.resources}
+                    onBuild={props.onBuild}
+                  />
+                ))}
+              </div>
+
+              <div className="gate gate-north">Ворота</div>
+              <div className="gate gate-east">Ворота</div>
+              <div className="gate gate-south">Ворота</div>
+              <div className="gate gate-west">Ворота</div>
+
+              <div className="capital">Столица</div>
+              <div className="outer-caption">Внешняя территория титанов</div>
+            </div>
           </div>
           <div className="cells">
             {props.city.cells.map(cell => <BuildCell key={cell.id} cell={cell} resources={props.city.resources} onBuild={props.onBuild} />)}
@@ -415,6 +461,36 @@ function BuildCell({ cell, resources, onBuild }: { cell: { id: string; buildingI
             ))}
           </select>
           <span>Недоступные здания станут активны, когда хватит ресурсов.</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MapBuildSlot({ cell, index, resources, onBuild }: { cell: { id: string; buildingId: string | null }; index: number; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
+  const building = buildingOptions.find(option => option.id === cell.buildingId);
+  return (
+    <div className={`map-build-slot plot-${index + 1} ${building ? `built building-${building.id}` : "empty"}`}>
+      {building ? (
+        <>
+          <strong>{building.name}</strong>
+          <span>{building.produces ? `+${building.amount} ${resourceLabels[building.produces]}` : "отряд"}</span>
+        </>
+      ) : (
+        <>
+          <strong>Пустой участок</strong>
+          <select
+            defaultValue=""
+            aria-label={`Построить здание на участке ${index + 1}`}
+            onChange={event => event.target.value && onBuild(cell.id, event.target.value)}
+          >
+            <option value="" disabled>Построить...</option>
+            {buildingOptions.map(option => (
+              <option key={option.id} value={option.id} disabled={!canPayResources(resources, option.cost)}>
+                {option.name} · {formatCost(option.cost)}
+              </option>
+            ))}
+          </select>
         </>
       )}
     </div>
