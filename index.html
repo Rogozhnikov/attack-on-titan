@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attack on Titan: Старт игры</title>
+  <style>
+    :root {
+      --bg: #161817;
+      --bg-2: #20231f;
+      --panel: #292c27;
+      --panel-soft: #34382f;
+      --line: #555a4d;
+      --line-strong: #858c78;
+      --text: #f3efe3;
+      --muted: #b8b19f;
+      --accent: #c94734;
+      --accent-2: #e0b453;
+      --green: #577464;
+      --blue: #556f8f;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .42);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 18%, rgba(201, 71, 52, .16), transparent 26rem),
+        radial-gradient(circle at 80% 8%, rgba(224, 180, 83, .12), transparent 22rem),
+        linear-gradient(135deg, #111311 0%, #20231f 45%, #151716 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .15;
+      background-image:
+        linear-gradient(90deg, rgba(255, 255, 255, .08) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, .07) 1px, transparent 1px);
+      background-size: 52px 52px;
+      mask-image: linear-gradient(to bottom, black, transparent 80%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      position: relative;
+      width: min(1440px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 24px clamp(16px, 3vw, 40px) 36px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 48px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .crest {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: linear-gradient(145deg, #384236, #242822);
+      box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .04);
+      flex: 0 0 auto;
+    }
+
+    .crest svg {
+      width: 30px;
+      height: 30px;
+      fill: none;
+      stroke: var(--accent-2);
+      stroke-width: 1.6;
+    }
+
+    .brand-text {
+      display: grid;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .brand-text strong {
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-text span {
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    .save-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(0, 0, 0, .18);
+      font-size: .85rem;
+      white-space: nowrap;
+    }
+
+    .save-indicator::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #7aa886;
+      box-shadow: 0 0 16px rgba(122, 168, 134, .85);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 390px) minmax(0, 1fr);
+      gap: clamp(18px, 3vw, 32px);
+      align-items: start;
+    }
+
+    .player-panel,
+    .roster-panel {
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(44, 48, 42, .96), rgba(29, 32, 29, .96));
+      box-shadow: var(--shadow);
+    }
+
+    .player-panel {
+      position: sticky;
+      top: 20px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 58px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 760px;
+      font-size: clamp(2rem, 6vw, 5.7rem);
+      line-height: .9;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: 1rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(224, 180, 83, .42);
+      border-radius: 999px;
+      color: #f2d993;
+      background: rgba(224, 180, 83, .08);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .hero {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 22px;
+      padding: clamp(16px, 3vw, 32px) 0 8px;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.6vw, 1.18rem);
+      line-height: 1.6;
+    }
+
+    .form {
+      display: grid;
+      gap: 18px;
+      padding: 20px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      color: #d8d1c2;
+      font-size: .82rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      min-height: 46px;
+      padding: 0 13px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 6px;
+      color: var(--text);
+      outline: 0;
+      background: rgba(0, 0, 0, .22);
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: rgba(224, 180, 83, .78);
+      box-shadow: 0 0 0 3px rgba(224, 180, 83, .12);
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .mode {
+      min-height: 38px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 6px;
+      color: var(--muted);
+      background: rgba(0, 0, 0, .18);
+      font-size: .84rem;
+      font-weight: 800;
+      transition: .18s ease;
+    }
+
+    .mode[aria-pressed="true"] {
+      color: #161817;
+      background: var(--accent-2);
+      border-color: var(--accent-2);
+    }
+
+    .preview {
+      display: grid;
+      gap: 12px;
+      min-height: 168px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, .08), transparent 44%),
+        rgba(0, 0, 0, .18);
+    }
+
+    .preview-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .preview-name {
+      color: var(--text);
+      font-size: 1.35rem;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .preview-character {
+      color: #f1dfaa;
+      font-weight: 800;
+    }
+
+    .stat-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .stat {
+      display: grid;
+      grid-template-columns: 78px 1fr 28px;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    .bar {
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .11);
+    }
+
+    .bar span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .22s ease;
+    }
+
+    .actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .primary {
+      min-height: 50px;
+      border-radius: 6px;
+      color: #190d0b;
+      background: linear-gradient(135deg, #e0b453, #d96d38 48%, #c94734);
+      font-weight: 950;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      box-shadow: 0 16px 36px rgba(201, 71, 52, .22);
+      transition: transform .18s ease, filter .18s ease, opacity .18s ease;
+    }
+
+    .primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .primary:disabled {
+      cursor: not-allowed;
+      opacity: .44;
+      box-shadow: none;
+    }
+
+    .secondary {
+      min-height: 40px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 6px;
+      color: var(--text);
+      background: rgba(255, 255, 255, .06);
+      font-weight: 800;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.45;
+    }
+
+    .roster-panel {
+      overflow: hidden;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, .09);
+    }
+
+    .search {
+      position: relative;
+      width: min(330px, 100%);
+    }
+
+    .search input {
+      padding-left: 38px;
+    }
+
+    .search svg {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translateY(-50%);
+      stroke: var(--muted);
+    }
+
+    .role-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .role-tab {
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(0, 0, 0, .14);
+      font-size: .82rem;
+      font-weight: 800;
+      transition: .18s ease;
+    }
+
+    .role-tab[aria-pressed="true"] {
+      color: #151716;
+      background: #d9d0bd;
+      border-color: #d9d0bd;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      padding: 20px;
+    }
+
+    .character-card {
+      position: relative;
+      min-height: 312px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: #22251f;
+      text-align: left;
+      isolation: isolate;
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .character-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(224, 180, 83, .58);
+    }
+
+    .character-card[aria-pressed="true"] {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 2px rgba(224, 180, 83, .2), 0 24px 54px rgba(0, 0, 0, .36);
+    }
+
+    .cover {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 24%, rgba(255, 255, 255, .16), transparent 13rem),
+        linear-gradient(160deg, var(--cover-a), var(--cover-b));
+    }
+
+    .cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .27;
+      background:
+        linear-gradient(135deg, transparent 0 47%, rgba(255,255,255,.16) 48% 49%, transparent 50%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 1px, transparent 1px 18px);
+      mask-image: linear-gradient(to bottom, black 20%, transparent 82%);
+    }
+
+    .portrait {
+      position: absolute;
+      left: 50%;
+      top: 42px;
+      width: 116px;
+      height: 156px;
+      transform: translateX(-50%);
+      filter: drop-shadow(0 18px 20px rgba(0, 0, 0, .3));
+    }
+
+    .portrait::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      width: var(--head-w);
+      height: var(--head-h);
+      transform: translateX(-50%);
+      border-radius: 48% 48% 43% 43%;
+      background: var(--skin);
+      box-shadow:
+        calc(var(--hair-flow) * 1px) -8px 0 8px var(--hair),
+        calc(var(--hair-flow) * -1px) -10px 0 8px var(--hair);
+    }
+
+    .portrait::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 106px;
+      height: 104px;
+      transform: translateX(-50%);
+      border-radius: 48% 48% 14% 14%;
+      background:
+        linear-gradient(90deg, transparent 0 15%, rgba(255,255,255,.16) 16% 17%, transparent 18% 82%, rgba(255,255,255,.16) 83% 84%, transparent 85%),
+        linear-gradient(135deg, var(--jacket), #1f241e);
+      clip-path: polygon(16% 8%, 84% 8%, 100% 100%, 0 100%);
+    }
+
+    .scarf {
+      position: absolute;
+      left: 50%;
+      top: 74px;
+      width: 72px;
+      height: 22px;
+      transform: translateX(-50%) rotate(var(--scarf-tilt));
+      border-radius: 999px;
+      background: var(--scarf);
+      opacity: var(--scarf-on);
+      z-index: 2;
+    }
+
+    .blade {
+      position: absolute;
+      top: 34px;
+      width: 5px;
+      height: 154px;
+      border-radius: 999px;
+      background: linear-gradient(#f2efe3, #7f877a);
+      opacity: var(--blade-on);
+      transform-origin: bottom center;
+      z-index: 1;
+    }
+
+    .blade.one {
+      left: 16px;
+      transform: rotate(-28deg);
+    }
+
+    .blade.two {
+      right: 16px;
+      transform: rotate(28deg);
+    }
+
+    .card-content {
+      position: absolute;
+      inset: auto 0 0;
+      z-index: 2;
+      display: grid;
+      gap: 10px;
+      padding: 92px 14px 14px;
+      background: linear-gradient(to top, rgba(14, 15, 13, .96) 0%, rgba(14, 15, 13, .82) 66%, transparent 100%);
+    }
+
+    .card-title {
+      display: grid;
+      gap: 2px;
+    }
+
+    .card-title strong {
+      font-size: 1.15rem;
+      line-height: 1.1;
+    }
+
+    .card-title span {
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .mini-stat {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+      padding: 8px 6px;
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .06);
+      text-align: center;
+    }
+
+    .mini-stat b {
+      color: #f1dfaa;
+      font-size: .95rem;
+    }
+
+    .mini-stat small {
+      color: var(--muted);
+      font-size: .68rem;
+      white-space: nowrap;
+    }
+
+    .quote {
+      min-height: 38px;
+      color: #d8d1c2;
+      font-size: .78rem;
+      line-height: 1.35;
+    }
+
+    .empty {
+      display: none;
+      padding: 30px 20px 40px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .start-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(12, 14, 12, .78);
+      backdrop-filter: blur(10px);
+    }
+
+    .start-overlay.open {
+      display: grid;
+    }
+
+    .mission {
+      width: min(620px, 100%);
+      overflow: hidden;
+      border: 1px solid rgba(224, 180, 83, .44);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #303329, #1b1d19);
+      box-shadow: var(--shadow);
+    }
+
+    .mission-cover {
+      min-height: 180px;
+      padding: 28px;
+      background:
+        linear-gradient(to top, rgba(0,0,0,.62), transparent),
+        linear-gradient(135deg, var(--selected-a, #364d44), var(--selected-b, #7d372d));
+      display: grid;
+      align-content: end;
+      gap: 8px;
+    }
+
+    .mission-cover small {
+      color: #f1dfaa;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .mission-cover strong {
+      font-size: clamp(1.8rem, 8vw, 3.6rem);
+      line-height: .92;
+      text-transform: uppercase;
+    }
+
+    .mission-body {
+      display: grid;
+      gap: 14px;
+      padding: 22px;
+    }
+
+    .mission-body p {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .mission-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .mission-actions button {
+      flex: 1 1 180px;
+    }
+
+    @media (max-width: 940px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .player-panel {
+        position: static;
+      }
+
+      .filter-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .search {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .save-indicator {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .character-card {
+        min-height: 290px;
+      }
+
+      .mode-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="crest" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <path d="M16 3 27 7v8c0 7-4.8 11.4-11 14C9.8 26.4 5 22 5 15V7l11-4Z" />
+            <path d="M9 16c3.7-.2 5.9-2.3 7-7 1.1 4.7 3.3 6.8 7 7-3.7.2-5.9 2.3-7 7-1.1-4.7-3.3-6.8-7-7Z" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <strong>Attack on Titan: Recruit</strong>
+          <span>мини-игра, стартовый экран</span>
+        </div>
+      </div>
+      <div class="save-indicator" id="saveIndicator">профиль не создан</div>
+    </header>
+
+    <section class="hero" aria-labelledby="pageTitle">
+      <span class="tag">стены ждут приказа</span>
+      <h1 id="pageTitle">Выбери бойца и начни вылазку</h1>
+      <p class="hero-copy">
+        Создай игрока, выбери режим подготовки и обложку персонажа. Персонажей могут выбирать разные игроки, но уже созданную чужую учетку занять нельзя.
+      </p>
+    </section>
+
+    <section class="layout">
+      <aside class="player-panel" aria-labelledby="playerTitle">
+        <div class="panel-head">
+          <h2 id="playerTitle">Профиль</h2>
+          <span class="tag" id="profileRank">Новобранец</span>
+        </div>
+
+        <div class="form">
+          <div class="field">
+            <label for="playerName">Имя игрока</label>
+            <input id="playerName" type="text" maxlength="24" placeholder="Например: Кадет-104" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label>Режим подготовки</label>
+            <div class="mode-grid" role="group" aria-label="Режим подготовки">
+              <button class="mode" data-mode="История" aria-pressed="true">История</button>
+              <button class="mode" data-mode="Арена" aria-pressed="false">Арена</button>
+              <button class="mode" data-mode="Выживание" aria-pressed="false">Выживание</button>
+            </div>
+          </div>
+
+          <div class="preview" aria-live="polite">
+            <div class="preview-row">
+              <span>Игрок</span>
+              <span id="previewMode">История</span>
+            </div>
+            <div>
+              <div class="preview-name" id="previewName">Без имени</div>
+              <div class="preview-character" id="previewCharacter">Персонаж не выбран</div>
+            </div>
+            <div class="stat-list">
+              <div class="stat">
+                <span>Скорость</span>
+                <div class="bar"><span id="speedBar"></span></div>
+                <b id="speedValue">0</b>
+              </div>
+              <div class="stat">
+                <span>Тактика</span>
+                <div class="bar"><span id="tacticBar"></span></div>
+                <b id="tacticValue">0</b>
+              </div>
+              <div class="stat">
+                <span>Воля</span>
+                <div class="bar"><span id="willBar"></span></div>
+                <b id="willValue">0</b>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="startButton" disabled>Начать вылазку</button>
+            <button class="secondary" id="randomButton">Случайный персонаж</button>
+            <p class="hint" id="hint">Введи имя и выбери одну из обложек персонажа.</p>
+          </div>
+        </div>
+      </aside>
+
+      <section class="roster-panel" aria-labelledby="rosterTitle">
+        <div class="panel-head">
+          <h2 id="rosterTitle">Персонажи манги</h2>
+          <span class="tag" id="visibleCount">10 доступно</span>
+        </div>
+
+        <div class="filter-row">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m21 21-4.4-4.4M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <input id="searchInput" type="text" placeholder="Найти персонажа" autocomplete="off" />
+          </div>
+          <div class="role-tabs" role="group" aria-label="Фильтр отряда">
+            <button class="role-tab" data-role="Все" aria-pressed="true">Все</button>
+            <button class="role-tab" data-role="Разведкорпус" aria-pressed="false">Разведкорпус</button>
+            <button class="role-tab" data-role="Кадеты" aria-pressed="false">Кадеты</button>
+            <button class="role-tab" data-role="Марли" aria-pressed="false">Марли</button>
+          </div>
+        </div>
+
+        <div class="cards" id="cards"></div>
+        <div class="empty" id="emptyState">По этому фильтру никого не нашлось.</div>
+      </section>
+    </section>
+  </main>
+
+  <div class="start-overlay" id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="missionTitle">
+    <div class="mission">
+      <div class="mission-cover" id="missionCover">
+        <small id="missionMode">История</small>
+        <strong id="missionTitle">Вылазка готова</strong>
+      </div>
+      <div class="mission-body">
+        <p id="missionText"></p>
+        <div class="mission-actions">
+          <button class="primary" id="confirmButton">Продолжить</button>
+          <button class="secondary" id="closeOverlay">Вернуться к выбору</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const characters = [
+      {
+        id: "eren",
+        name: "Эрен Йегер",
+        squad: "Кадеты",
+        role: "Атака",
+        quote: "Рывок вперед, даже когда цена уже видна.",
+        stats: { speed: 82, tactic: 64, will: 96 },
+        colors: ["#23352f", "#8d392d"],
+        style: { skin: "#d7ad82", hair: "#221d18", jacket: "#3d5141", scarf: "transparent", scarfOn: 0, scarfTilt: "0deg", bladeOn: 1, headW: "48px", headH: "58px", hairFlow: 9 }
+      },
+      {
+        id: "mikasa",
+        name: "Микаса Аккерман",
+        squad: "Разведкорпус",
+        role: "Защита",
+        quote: "Холодная точность и верность своему решению.",
+        stats: { speed: 92, tactic: 82, will: 90 },
+        colors: ["#24252a", "#6e2532"],
+        style: { skin: "#d2a77e", hair: "#151617", jacket: "#344538", scarf: "#9d2630", scarfOn: 1, scarfTilt: "-7deg", bladeOn: 1, headW: "50px", headH: "56px", hairFlow: 16 }
+      },
+      {
+        id: "armin",
+        name: "Армин Арлерт",
+        squad: "Кадеты",
+        role: "Тактика",
+        quote: "Победа начинается там, где появился план.",
+        stats: { speed: 58, tactic: 96, will: 78 },
+        colors: ["#33465a", "#b69348"],
+        style: { skin: "#e0bc8f", hair: "#d8b86b", jacket: "#465945", scarf: "transparent", scarfOn: 0, scarfTilt: "0deg", bladeOn: .6, headW: "46px", headH: "55px", hairFlow: 7 }
+      },
+      {
+        id: "levi",
+        name: "Леви Аккерман",
+        squad: "Разведкорпус",
+        role: "Скорость",
+        quote: "Один короткий приказ, один чистый удар.",
+        stats: { speed: 98, tactic: 88, will: 86 },
+        colors: ["#1d2324", "#58655e"],
+        style: { skin: "#cfaa82", hair: "#191918", jacket: "#2f4339", scarf: "#f0ead8", scarfOn: .85, scarfTilt: "2deg", bladeOn: 1, headW: "44px", headH: "52px", hairFlow: 3 }
+      },
+      {
+        id: "hange",
+        name: "Ханджи Зое",
+        squad: "Разведкорпус",
+        role: "Наука",
+        quote: "Любопытство, которое превращает страх в знание.",
+        stats: { speed: 74, tactic: 93, will: 84 },
+        colors: ["#31453d", "#7f6541"],
+        style: { skin: "#d9b084", hair: "#4a3525", jacket: "#3b5544", scarf: "transparent", scarfOn: 0, scarfTilt: "0deg", bladeOn: .7, headW: "48px", headH: "57px", hairFlow: 18 }
+      },
+      {
+        id: "erwin",
+        name: "Эрвин Смит",
+        squad: "Разведкорпус",
+        role: "Командир",
+        quote: "Риск становится оружием, когда у него есть цель.",
+        stats: { speed: 68, tactic: 98, will: 95 },
+        colors: ["#263441", "#9a7a44"],
+        style: { skin: "#d9b08a", hair: "#d4b063", jacket: "#405545", scarf: "transparent", scarfOn: 0, scarfTilt: "0deg", bladeOn: .45, headW: "50px", headH: "58px", hairFlow: 4 }
+      },
+      {
+        id: "reiner",
+        name: "Райнер Браун",
+        squad: "Марли",
+        role: "Броня",
+        quote: "Держит линию, даже когда трещит сам.",
+        stats: { speed: 62, tactic: 76, will: 92 },
+        colors: ["#5a4a34", "#7b2f27"],
+        style: { skin: "#d4a474", hair: "#c6a052", jacket: "#554b36", scarf: "transparent", scarfOn: 0, scarfTilt: "0deg", bladeOn: .35, headW: "54px", headH: "60px", hairFlow: 2 }
+      },
+      {
+        id: "annie",
+        name: "Энни Леонхарт",
+        squad: "Марли",
+        role: "Дуэль",
+        quote: "Минимум движений, максимум последствий.",
+        stats: { speed: 86, tactic: 84, will: 78 },
+        colors: ["#253f55", "#b79a5d"],
+        style: { skin: "#dcb083", hair: "#d6c074", jacket: "#455b60", scarf: "transparent", scarfOn: 0, scarfTilt: "0deg", bladeOn: .65, headW: "47px", headH: "56px", hairFlow: 13 }
+      },
+      {
+        id: "jean",
+        name: "Жан Кирштейн",
+        squad: "Кадеты",
+        role: "Маневр",
+        quote: "Практичный выбор там, где героизм шумит слишком громко.",
+        stats: { speed: 78, tactic: 82, will: 76 },
+        colors: ["#3f4136", "#936548"],
+        style: { skin: "#d3a87b", hair: "#8d7048", jacket: "#46523e", scarf: "transparent", scarfOn: 0, scarfTilt: "0deg", bladeOn: .8, headW: "48px", headH: "58px", hairFlow: 8 }
+      },
+      {
+        id: "sasha",
+        name: "Саша Браус",
+        squad: "Кадеты",
+        role: "Стрелок",
+        quote: "Быстрый глаз, легкий шаг и запасной паек.",
+        stats: { speed: 80, tactic: 74, will: 82 },
+        colors: ["#3b4f34", "#8a5a30"],
+        style: { skin: "#d8ad80", hair: "#61422b", jacket: "#43583b", scarf: "#6b4b2d", scarfOn: .35, scarfTilt: "4deg", bladeOn: .55, headW: "47px", headH: "57px", hairFlow: 14 }
+      }
+    ];
+
+    const state = {
+      selectedId: "",
+      mode: "История",
+      role: "Все",
+      query: "",
+      token: "",
+      players: [],
+      currentPlayer: null,
+      apiReady: false,
+      pending: false
+    };
+
+    const els = {
+      cards: document.getElementById("cards"),
+      empty: document.getElementById("emptyState"),
+      playerName: document.getElementById("playerName"),
+      previewName: document.getElementById("previewName"),
+      previewCharacter: document.getElementById("previewCharacter"),
+      previewMode: document.getElementById("previewMode"),
+      profileRank: document.getElementById("profileRank"),
+      saveIndicator: document.getElementById("saveIndicator"),
+      startButton: document.getElementById("startButton"),
+      randomButton: document.getElementById("randomButton"),
+      hint: document.getElementById("hint"),
+      visibleCount: document.getElementById("visibleCount"),
+      searchInput: document.getElementById("searchInput"),
+      speedBar: document.getElementById("speedBar"),
+      tacticBar: document.getElementById("tacticBar"),
+      willBar: document.getElementById("willBar"),
+      speedValue: document.getElementById("speedValue"),
+      tacticValue: document.getElementById("tacticValue"),
+      willValue: document.getElementById("willValue"),
+      startOverlay: document.getElementById("startOverlay"),
+      missionCover: document.getElementById("missionCover"),
+      missionMode: document.getElementById("missionMode"),
+      missionTitle: document.getElementById("missionTitle"),
+      missionText: document.getElementById("missionText"),
+      closeOverlay: document.getElementById("closeOverlay"),
+      confirmButton: document.getElementById("confirmButton")
+    };
+
+    function selectedCharacter() {
+      return characters.find(character => character.id === state.selectedId);
+    }
+
+    function applyPortraitVars(card, character) {
+      const { style } = character;
+      card.style.setProperty("--cover-a", character.colors[0]);
+      card.style.setProperty("--cover-b", character.colors[1]);
+      card.style.setProperty("--skin", style.skin);
+      card.style.setProperty("--hair", style.hair);
+      card.style.setProperty("--jacket", style.jacket);
+      card.style.setProperty("--scarf", style.scarf);
+      card.style.setProperty("--scarf-on", style.scarfOn);
+      card.style.setProperty("--scarf-tilt", style.scarfTilt);
+      card.style.setProperty("--blade-on", style.bladeOn);
+      card.style.setProperty("--head-w", style.headW);
+      card.style.setProperty("--head-h", style.headH);
+      card.style.setProperty("--hair-flow", style.hairFlow);
+    }
+
+    function characterTemplate(character) {
+      const button = document.createElement("button");
+      button.className = "character-card";
+      button.type = "button";
+      button.dataset.id = character.id;
+      button.dataset.role = character.squad;
+      button.setAttribute("aria-pressed", String(character.id === state.selectedId));
+      button.setAttribute("aria-label", `Выбрать ${character.name}`);
+      applyPortraitVars(button, character);
+
+      button.innerHTML = `
+        <div class="cover"></div>
+        <div class="portrait" aria-hidden="true">
+          <span class="blade one"></span>
+          <span class="blade two"></span>
+          <span class="scarf"></span>
+        </div>
+        <div class="card-content">
+          <div class="card-title">
+            <strong>${character.name}</strong>
+            <span>${character.squad} / ${character.role}</span>
+          </div>
+          <div class="mini-stats" aria-hidden="true">
+            <span class="mini-stat"><b>${character.stats.speed}</b><small>скор.</small></span>
+            <span class="mini-stat"><b>${character.stats.tactic}</b><small>такт.</small></span>
+            <span class="mini-stat"><b>${character.stats.will}</b><small>воля</small></span>
+          </div>
+          <p class="quote">${character.quote}</p>
+        </div>
+      `;
+
+      button.addEventListener("click", () => {
+        state.selectedId = character.id;
+        saveState();
+        render();
+      });
+
+      return button;
+    }
+
+    function filteredCharacters() {
+      const query = state.query.trim().toLowerCase();
+      return characters.filter(character => {
+        const byRole = state.role === "Все" || character.squad === state.role;
+        const byQuery = !query || `${character.name} ${character.squad} ${character.role}`.toLowerCase().includes(query);
+        return byRole && byQuery;
+      });
+    }
+
+    function renderCards() {
+      const visible = filteredCharacters();
+      els.cards.innerHTML = "";
+      visible.forEach(character => els.cards.appendChild(characterTemplate(character)));
+      els.empty.style.display = visible.length ? "none" : "block";
+      els.visibleCount.textContent = `${visible.length} доступно`;
+    }
+
+    function renderPreview() {
+      const name = els.playerName.value.trim();
+      const character = selectedCharacter();
+      els.previewName.textContent = name || "Без имени";
+      els.previewMode.textContent = state.mode;
+      els.previewCharacter.textContent = character ? character.name : "Персонаж не выбран";
+      els.profileRank.textContent = character ? character.role : "Новобранец";
+      els.saveIndicator.textContent = state.apiReady
+        ? (state.currentPlayer ? "профиль сохранен" : "сервер подключен")
+        : "подключение к серверу";
+      els.startButton.disabled = !(name && character) || state.pending || !state.apiReady;
+      els.startButton.textContent = state.currentPlayer ? "Играть персонажем" : "Создать игрока";
+
+      const stats = character?.stats || { speed: 0, tactic: 0, will: 0 };
+      updateStat("speed", stats.speed);
+      updateStat("tactic", stats.tactic);
+      updateStat("will", stats.will);
+
+      if (!name && !character) {
+        els.hint.textContent = "Введи имя и выбери одну из обложек персонажа.";
+      } else if (!name) {
+        els.hint.textContent = "Осталось ввести имя игрока.";
+      } else if (!character) {
+        els.hint.textContent = "Осталось выбрать обложку персонажа.";
+      } else if (!state.apiReady) {
+        els.hint.textContent = "Подключаюсь к серверу игроков.";
+      } else {
+        els.hint.textContent = state.currentPlayer
+          ? "Профиль сохранен. Можно продолжить игру этим персонажем."
+          : "Все готово. Создай учетку и выбери обложку персонажа.";
+      }
+    }
+
+    function updateStat(key, value) {
+      const bar = els[`${key}Bar`];
+      const label = els[`${key}Value`];
+      bar.style.width = `${value}%`;
+      label.textContent = value;
+    }
+
+    function renderControls() {
+      document.querySelectorAll(".mode").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode));
+      });
+      document.querySelectorAll(".role-tab").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.role === state.role));
+      });
+    }
+
+    function render() {
+      renderControls();
+      renderCards();
+      renderPreview();
+    }
+
+    function saveState() {
+      const payload = {
+        name: els.playerName.value,
+        selectedId: state.selectedId,
+        mode: state.mode,
+        token: state.token
+      };
+      localStorage.setItem("aotRecruitProfile", JSON.stringify(payload));
+    }
+
+    function restoreState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("aotRecruitProfile"));
+        if (!saved) return;
+        els.playerName.value = saved.name || "";
+        state.selectedId = saved.selectedId || "";
+        state.mode = saved.mode || "История";
+        state.token = saved.token || "";
+      } catch {
+        localStorage.removeItem("aotRecruitProfile");
+      }
+    }
+
+    async function apiRequest(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.message || "Сервер игроков временно недоступен.");
+        error.payload = payload;
+        error.status = response.status;
+        throw error;
+      }
+      return payload;
+    }
+
+    function applyServerState(payload) {
+      state.players = Array.isArray(payload.players) ? payload.players : [];
+      if ("currentPlayer" in payload) {
+        state.currentPlayer = payload.currentPlayer;
+      }
+      if ("player" in payload) {
+        state.currentPlayer = payload.player;
+      }
+
+      if (payload.token) {
+        state.token = payload.token;
+      }
+
+      if (state.currentPlayer) {
+        els.playerName.value = state.currentPlayer.name || els.playerName.value;
+        state.selectedId = state.currentPlayer.characterId || state.selectedId;
+        state.mode = state.currentPlayer.mode || state.mode;
+      }
+
+      saveState();
+    }
+
+    async function loadServerState() {
+      try {
+        const query = state.token ? `?token=${encodeURIComponent(state.token)}` : "";
+        const payload = await apiRequest(`/api/state${query}`);
+        state.apiReady = true;
+        applyServerState(payload);
+      } catch {
+        state.apiReady = false;
+        els.hint.textContent = "Сервер игроков пока не отвечает. Выбор персонажа временно закрыт.";
+      } finally {
+        render();
+      }
+    }
+
+    async function createOrUpdatePlayer() {
+      const payload = await apiRequest("/api/players", {
+        method: "POST",
+        body: JSON.stringify({
+          token: state.token,
+          name: els.playerName.value.trim(),
+          characterId: state.selectedId,
+          mode: state.mode
+        })
+      });
+      state.apiReady = true;
+      applyServerState(payload);
+      return payload.player;
+    }
+
+    async function startMission() {
+      const character = selectedCharacter();
+      const name = els.playerName.value.trim();
+      if (!character || !name) return;
+
+      state.pending = true;
+      els.startButton.textContent = "Сохраняю...";
+      renderPreview();
+
+      try {
+        await createOrUpdatePlayer();
+      } catch (error) {
+        if (error.status === 409 && error.payload?.players) {
+          state.players = error.payload.players;
+          els.hint.textContent = error.payload.message || "Такая учетка уже создана другим игроком.";
+        } else {
+          els.hint.textContent = error.message || "Не удалось сохранить игрока.";
+        }
+        render();
+        return;
+      } finally {
+        state.pending = false;
+        render();
+      }
+
+      els.missionCover.style.setProperty("--selected-a", character.colors[0]);
+      els.missionCover.style.setProperty("--selected-b", character.colors[1]);
+      els.missionMode.textContent = state.mode;
+      els.missionTitle.textContent = `${name} / ${character.name}`;
+      els.missionText.textContent = `Профиль сохранен на сервере: режим "${state.mode}", обложка "${character.name}", роль "${character.role}". Другие игроки не смогут занять эту учетку.`;
+      els.startOverlay.classList.add("open");
+      els.closeOverlay.focus();
+    }
+
+    document.querySelectorAll(".mode").forEach(button => {
+      button.addEventListener("click", () => {
+        state.mode = button.dataset.mode;
+        saveState();
+        renderPreview();
+        renderControls();
+      });
+    });
+
+    document.querySelectorAll(".role-tab").forEach(button => {
+      button.addEventListener("click", () => {
+        state.role = button.dataset.role;
+        render();
+      });
+    });
+
+    els.playerName.addEventListener("input", () => {
+      saveState();
+      renderPreview();
+    });
+
+    els.searchInput.addEventListener("input", () => {
+      state.query = els.searchInput.value;
+      renderCards();
+    });
+
+    els.randomButton.addEventListener("click", () => {
+      const visible = filteredCharacters();
+      const pool = visible.length ? visible : characters;
+      if (!pool.length) {
+        els.hint.textContent = "Список персонажей пуст.";
+        return;
+      }
+      const next = pool[Math.floor(Math.random() * pool.length)];
+      state.selectedId = next.id;
+      saveState();
+      render();
+    });
+
+    els.startButton.addEventListener("click", startMission);
+
+    els.closeOverlay.addEventListener("click", () => {
+      els.startOverlay.classList.remove("open");
+      els.startButton.focus();
+    });
+
+    els.confirmButton.addEventListener("click", () => {
+      els.startOverlay.classList.remove("open");
+      els.hint.textContent = "Заготовка готова: следующий экран можно сделать уже как игровую миссию.";
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        els.startOverlay.classList.remove("open");
+      }
+    });
+
+    restoreState();
+    render();
+    loadServerState();
+  </script>
+</body>
+</html>
