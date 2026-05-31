@@ -116,7 +116,8 @@ function App() {
     setCity(current => ({
       ...current,
       resources: pay(current.resources, option.cost),
-      cells: current.cells.map(cell => cell.id === cellId ? { ...cell, buildingId } : cell)
+      cells: current.cells.map(cell => cell.id === cellId ? { ...cell, buildingId } : cell),
+      lastTickAt: new Date().toISOString()
     }));
     setMessage(`${option.name} построено.`);
   }
@@ -291,13 +292,15 @@ function CityScreen(props: {
             <div className="capital">Столица</div>
           </div>
           <div className="cells">
-            {props.city.cells.map(cell => <BuildCell key={cell.id} cell={cell} onBuild={props.onBuild} />)}
+            {props.city.cells.map(cell => <BuildCell key={cell.id} cell={cell} resources={props.city.resources} onBuild={props.onBuild} />)}
           </div>
         </div>
 
         <aside className="panel">
           <h2>Ресурсные циклы</h2>
           <p className="muted">Еда: 30с. Дерево: 45с. Камень: 50с. Железо: 70с. Люди: 120с через приют или сразу через вылазки.</p>
+          <ProductionSummary city={props.city} />
+          <BuildingCatalog resources={props.city.resources} />
           <button className="primary" onClick={props.onStartExpedition}>Вылазка за стену</button>
           {props.mission && <Mission mission={props.mission} onGather={props.onGather} onFinish={props.onFinishMission} onRestart={props.onRestartMission} />}
         </aside>
@@ -325,7 +328,7 @@ function ResourceBar({ resources }: { resources: Record<ResourceKey, number> }) 
   return <section className="resources">{(Object.keys(resourceLabels) as ResourceKey[]).map(key => <div key={key}><span>{resourceLabels[key]}</span><strong>{resources[key]}</strong></div>)}</section>;
 }
 
-function BuildCell({ cell, onBuild }: { cell: { id: string; buildingId: string | null }; onBuild: (cellId: string, buildingId: string) => void }) {
+function BuildCell({ cell, resources, onBuild }: { cell: { id: string; buildingId: string | null }; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
   const building = buildingOptions.find(option => option.id === cell.buildingId);
   return (
     <div className="build-cell">
@@ -339,10 +342,50 @@ function BuildCell({ cell, onBuild }: { cell: { id: string; buildingId: string |
           <strong>Свободная ячейка</strong>
           <select defaultValue="" onChange={event => event.target.value && onBuild(cell.id, event.target.value)}>
             <option value="" disabled>Построить...</option>
-            {buildingOptions.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
+            {buildingOptions.map(option => (
+              <option key={option.id} value={option.id} disabled={!canPayResources(resources, option.cost)}>
+                {option.name} · {formatCost(option.cost)}
+              </option>
+            ))}
           </select>
+          <span>Недоступные здания станут активны, когда хватит ресурсов.</span>
         </>
       )}
+    </div>
+  );
+}
+
+function ProductionSummary({ city }: { city: CityState }) {
+  const rates = (Object.keys(resourceLabels) as ResourceKey[]).reduce<Record<ResourceKey, number>>((acc, key) => {
+    acc[key] = 0;
+    return acc;
+  }, { food: 0, wood: 0, stone: 0, iron: 0, people: 0 });
+
+  city.cells.forEach(cell => {
+    const building = buildingOptions.find(option => option.id === cell.buildingId && option.produces);
+    if (!building?.produces) return;
+    rates[building.produces] += Math.round((building.amount * 3600) / building.period);
+  });
+
+  return (
+    <div className="production-summary">
+      {(Object.keys(resourceLabels) as ResourceKey[]).map(key => (
+        <span key={key}>{resourceLabels[key]} <b>+{rates[key]}/ч</b></span>
+      ))}
+    </div>
+  );
+}
+
+function BuildingCatalog({ resources }: { resources: Record<ResourceKey, number> }) {
+  return (
+    <div className="building-catalog">
+      {buildingOptions.map(option => (
+        <article key={option.id} className={canPayResources(resources, option.cost) ? "" : "unavailable"}>
+          <strong>{option.name}</strong>
+          <span>{option.description}</span>
+          <small>Цена: {formatCost(option.cost)}</small>
+        </article>
+      ))}
     </div>
   );
 }
@@ -370,15 +413,21 @@ function applyProduction(city: CityState): CityState {
 
   const resources = { ...city.resources };
   let consumedSeconds = 0;
+  let hasProduction = false;
   city.cells.forEach(cell => {
     const building = buildingOptions.find(option => option.id === cell.buildingId && option.produces);
     if (!building || !building.produces) return;
+    hasProduction = true;
     const ticks = Math.floor(elapsed / building.period);
     if (ticks > 0) {
       resources[building.produces] += ticks * building.amount;
       consumedSeconds = Math.max(consumedSeconds, ticks * building.period);
     }
   });
+
+  if (!hasProduction) {
+    return { ...city, lastTickAt: new Date(now).toISOString() };
+  }
 
   return { ...city, resources, lastTickAt: new Date(last + consumedSeconds * 1000).toISOString() };
 }
@@ -395,7 +444,11 @@ function finishMissionState(mission: MissionState): MissionState {
 }
 
 function canPay(city: CityState, cost: Partial<Record<ResourceKey, number>>) {
-  return Object.entries(cost).every(([key, value]) => city.resources[key as ResourceKey] >= (value || 0));
+  return canPayResources(city.resources, cost);
+}
+
+function canPayResources(resources: Record<ResourceKey, number>, cost: Partial<Record<ResourceKey, number>>) {
+  return Object.entries(cost).every(([key, value]) => resources[key as ResourceKey] >= (value || 0));
 }
 
 function pay(resources: Record<ResourceKey, number>, cost: Partial<Record<ResourceKey, number>>) {
@@ -416,6 +469,10 @@ function addResources(base: Record<ResourceKey, number>, extra: Record<ResourceK
 
 function formatReward(reward: Partial<Record<ResourceKey, number>>) {
   return Object.entries(reward).map(([key, value]) => `+${value} ${resourceLabels[key as ResourceKey]}`).join(" · ");
+}
+
+function formatCost(cost: Partial<Record<ResourceKey, number>>) {
+  return Object.entries(cost).map(([key, value]) => `${value} ${resourceLabels[key as ResourceKey]}`).join(", ");
 }
 
 function readLocalProfile() {

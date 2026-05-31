@@ -460,6 +460,55 @@ select option {
   font-size: .82rem;
 }
 
+.production-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.production-summary span {
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .055);
+  font-size: .8rem;
+}
+
+.production-summary b {
+  color: #f1dc9f;
+}
+
+.building-catalog {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 4px;
+}
+
+.building-catalog article {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(223, 182, 94, .24);
+  border-radius: 8px;
+  background: rgba(223, 182, 94, .06);
+}
+
+.building-catalog article.unavailable {
+  border-color: rgba(255, 255, 255, .09);
+  background: rgba(255, 255, 255, .035);
+  opacity: .62;
+}
+
+.building-catalog span,
+.building-catalog small {
+  color: var(--muted);
+  font-size: .78rem;
+  line-height: 1.35;
+}
+
 .mission-box {
   display: grid;
   gap: 10px;
