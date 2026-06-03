@@ -54,7 +54,7 @@ function normalizeCityState(city: Partial<CityState> | null | undefined): CitySt
   };
 }
 
-function createMissionState(city?: CityState): MissionState {
+function createMissionState(city?: CityState, character?: Character): MissionState {
   const bonuses = getExpeditionBonuses(city);
   return {
     active: true,
@@ -65,6 +65,7 @@ function createMissionState(city?: CityState): MissionState {
     returnRiskBonus: bonuses.returnRiskReduction,
     resources: { food: 0, wood: 0, stone: 0, iron: 0, people: 0 },
     log: [
+      character ? `${character.name} возглавляет вылазку за стену.` : "",
       "Отряд вышел за стену. Нужно собрать ресурсы и вернуться.",
       bonuses.summary
     ].filter(Boolean),
@@ -90,6 +91,7 @@ function App() {
   const [busy, setBusy] = useState(false);
 
   const selectedCharacter = characters.find(character => character.id === selectedId) || characters[0];
+  const accountCharacter = player ? characters.find(character => character.id === player.characterId) || selectedCharacter : selectedCharacter;
   const roles = ["Все", "Разведкорпус", "Кадеты", "Марли", "Гарнизон", "Военная полиция"];
   const visibleCharacters = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("ru-RU");
@@ -144,6 +146,8 @@ function App() {
       const payload = await savePlayer({ token, name, password, characterId: selectedId, mode });
       setToken(payload.token);
       setPlayer(payload.player);
+      setSelectedId(payload.player.characterId);
+      setMode(payload.player.mode);
       setCity(applyProduction(normalizeCityState(payload.player.cityState)));
       setScreen("city");
       setPassword("");
@@ -172,6 +176,20 @@ function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleSwitchAccount() {
+    setToken("");
+    setName("");
+    setPassword("");
+    setPlayer(null);
+    setCity(defaultCityState());
+    setMission(null);
+    setSelectedId(characters[0].id);
+    setMode("История");
+    setAuthMode("login");
+    setScreen("setup");
+    setMessage("Сессия закрыта. Войдите в свою учетку или создайте нового игрока.");
   }
 
   function build(cellId: string, buildingId: string) {
@@ -221,7 +239,7 @@ function App() {
   }
 
   function startExpedition() {
-    setMission(createMissionState(city));
+    setMission(createMissionState(city, accountCharacter));
   }
 
   function gather(site: typeof expeditionSites[number]) {
@@ -297,9 +315,9 @@ function App() {
       ) : (
         <CityScreen
           player={player}
-          character={selectedCharacter}
+          character={accountCharacter}
           city={city}
-          setScreen={setScreen}
+          onSwitchAccount={handleSwitchAccount}
           onBuild={build}
           onRepairSinaGates={repairSinaGates}
           onSecureSinaRoseTerritory={secureSinaRoseTerritory}
@@ -337,6 +355,7 @@ function SetupScreen(props: {
   busy: boolean;
 }) {
   const canSubmit = props.name.trim().length >= 2 && props.password.length >= (props.authMode === "create" ? 6 : 1) && !props.busy;
+  const rosterLocked = props.authMode === "login";
 
   return (
     <>
@@ -380,7 +399,7 @@ function SetupScreen(props: {
           </button>
         </aside>
 
-        <section className={`panel ${props.authMode === "login" ? "muted-panel" : ""}`}>
+        <section className={`panel ${rosterLocked ? "muted-panel roster-locked" : ""}`}>
           <div className="panel-head"><h2>Персонажи манги</h2><span className="tag">{props.visibleCharacters.length} доступно</span></div>
           {props.authMode === "login" && <p className="muted login-note">При входе персонаж и город загрузятся из сохраненной учетки. Выбор ростера нужен только при создании нового игрока.</p>}
           <div className="filters">
@@ -388,7 +407,15 @@ function SetupScreen(props: {
             <div className="chips">{props.roles.map(role => <button key={role} className={props.role === role ? "active" : ""} onClick={() => props.setRole(role)}>{role}</button>)}</div>
           </div>
           <div className="character-grid">
-            {props.visibleCharacters.map(character => <CharacterCard key={character.id} character={character} selected={props.selectedId === character.id} onClick={() => props.setSelectedId(character.id)} />)}
+            {props.visibleCharacters.map(character => (
+              <CharacterCard
+                key={character.id}
+                character={character}
+                selected={props.selectedId === character.id}
+                disabled={rosterLocked}
+                onClick={() => props.setSelectedId(character.id)}
+              />
+            ))}
           </div>
         </section>
       </section>
@@ -400,7 +427,7 @@ function CityScreen(props: {
   player: Player | null;
   character: Character;
   city: CityState;
-  setScreen: (screen: "setup" | "city") => void;
+  onSwitchAccount: () => void;
   onBuild: (cellId: string, buildingId: string) => void;
   onRepairSinaGates: () => void;
   onSecureSinaRoseTerritory: () => void;
@@ -432,7 +459,7 @@ function CityScreen(props: {
         </div>
         <div className="city-actions">
           <span className={hasMission ? "mission-pill active" : "mission-pill"}>{hasMission ? "вылазка активна" : "отряд в городе"}</span>
-          <button className="secondary" onClick={() => props.setScreen("setup")}>К ростеру</button>
+          <button className="secondary" onClick={props.onSwitchAccount}>Сменить аккаунт</button>
         </div>
       </section>
 
@@ -628,9 +655,9 @@ function WallProgress({ gatesRepaired, territorySecured, roseUnlocked, resources
   );
 }
 
-function CharacterCard({ character, selected, onClick }: { character: Character; selected: boolean; onClick: () => void }) {
+function CharacterCard({ character, selected, disabled = false, onClick }: { character: Character; selected: boolean; disabled?: boolean; onClick: () => void }) {
   return (
-    <button className={`character-card ${selected ? "selected" : ""}`} style={{ "--a": character.colors[0], "--b": character.colors[1] } as React.CSSProperties} onClick={onClick}>
+    <button className={`character-card ${selected ? "selected" : ""}`} style={{ "--a": character.colors[0], "--b": character.colors[1] } as React.CSSProperties} disabled={disabled} onClick={onClick}>
       <div className="portrait" />
       <strong>{character.name}</strong>
       <span>{character.squad} / {character.role}</span>

@@ -285,6 +285,16 @@ select option {
   opacity: .82;
 }
 
+.roster-locked .character-card {
+  cursor: not-allowed;
+  opacity: .62;
+}
+
+.roster-locked .character-card:hover {
+  border-color: var(--line);
+  transform: none;
+}
+
 .login-note {
   margin: 0 0 14px;
   line-height: 1.45;

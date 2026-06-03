@@ -196,7 +196,6 @@ class JsonStore implements Store {
     if (player) {
       player.name = input.name;
       player.normalizedName = normalizeName(input.name);
-      player.characterId = input.characterId;
       player.mode = input.mode;
       if (passwordData) {
         player.passwordSalt = passwordData.salt;
@@ -302,14 +301,14 @@ class PostgresStore implements Store {
     try {
       const result = await this.pool.query(
         current
-          ? `UPDATE players SET name = $2, normalized_name = $3, character_id = $4, mode = $5,
-               password_salt = COALESCE($6, password_salt), password_hash = COALESCE($7, password_hash),
-               password_params = COALESCE($8::jsonb, password_params), updated_at = $9
+          ? `UPDATE players SET name = $2, normalized_name = $3, mode = $4,
+               password_salt = COALESCE($5, password_salt), password_hash = COALESCE($6, password_hash),
+               password_params = COALESCE($7::jsonb, password_params), updated_at = $8
              WHERE token = $1 RETURNING *`
           : `INSERT INTO players (id, token, name, normalized_name, character_id, mode, city_state, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING *`,
         current
-          ? [input.token, input.name, normalizeName(input.name), input.characterId, input.mode, passwordData?.salt || null, passwordData?.hash || null, passwordData ? JSON.stringify(passwordData.params) : null, now]
+          ? [input.token, input.name, normalizeName(input.name), input.mode, passwordData?.salt || null, passwordData?.hash || null, passwordData ? JSON.stringify(passwordData.params) : null, now]
           : [randomUUID(), input.token, input.name, normalizeName(input.name), input.characterId, input.mode, JSON.stringify(defaultCityState()), now]
       );
 
