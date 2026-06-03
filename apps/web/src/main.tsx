@@ -180,6 +180,7 @@ function App() {
     const option = (isGateCell ? gateBuildingOptions : buildingOptions).find(item => item.id === buildingId);
     if (!option) return;
     if (isRoseCell && !city.unlockedWalls.includes("rose")) return setMessage("Сначала почини ворота и отвоюй пространство между Стеной Сина и Стеной Роза.");
+    if (isGateCell && !canUseGateAnnexes(city)) return setMessage("Пристройки у ворот станут доступны после ремонта ворот и закрепления пространства между стенами.");
     if (!canPay(city, option.cost)) return setMessage("Не хватает ресурсов для строительства.");
 
     setCity(current => ({
@@ -416,6 +417,7 @@ function CityScreen(props: {
   const roseUnlocked = props.city.unlockedWalls.includes("rose");
   const gatesRepaired = props.city.repairedGates.includes("sina");
   const territorySecured = props.city.securedTerritories.includes("sina-rose");
+  const gateAnnexesUnlocked = gatesRepaired && territorySecured;
   const builtRoseCells = props.city.roseCells.filter(cell => cell.buildingId).length;
   const freeRoseCells = props.city.roseCells.length - builtRoseCells;
   const hasMission = Boolean(props.mission?.active && !props.mission.finished);
@@ -512,7 +514,8 @@ function CityScreen(props: {
                     index={index}
                     options={gateBuildingOptions}
                     className={`gate-plot gate-plot-${index + 1}`}
-                    label={gateNames[index]}
+                    label={gateAnnexesUnlocked ? gateNames[index] : "Закрыто"}
+                    locked={!gateAnnexesUnlocked}
                     resources={props.city.resources}
                     onBuild={props.onBuild}
                   />
@@ -572,6 +575,7 @@ function CityScreen(props: {
                 cell={cell}
                 title={gateNames[index]}
                 options={gateBuildingOptions}
+                locked={!gateAnnexesUnlocked}
                 resources={props.city.resources}
                 onBuild={props.onBuild}
               />
@@ -843,6 +847,10 @@ function allBuildingOptions() {
 
 function canPay(city: CityState, cost: Partial<Record<ResourceKey, number>>) {
   return canPayResources(city.resources, cost);
+}
+
+function canUseGateAnnexes(city: CityState) {
+  return city.repairedGates.includes("sina") && city.securedTerritories.includes("sina-rose");
 }
 
 function canPayResources(resources: Record<ResourceKey, number>, cost: Partial<Record<ResourceKey, number>>) {
