@@ -17,7 +17,10 @@ export type CityCell = {
 export type CityState = {
   resources: Record<ResourceKey, number>;
   cells: CityCell[];
+  roseCells: CityCell[];
   gateCells: CityCell[];
+  repairedGates: string[];
+  securedTerritories: string[];
   unlockedWalls: string[];
   lastTickAt: string;
 };

@@ -15,6 +15,8 @@ const mapDistricts = [
 
 const titanMarkers = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
 const gateNames = ["Северные ворота", "Восточные ворота", "Южные ворота", "Западные ворота"];
+const repairSinaGateCost: Partial<Record<ResourceKey, number>> = { wood: 45, stone: 35, iron: 15, people: 4 };
+const secureSinaRoseCost: Partial<Record<ResourceKey, number>> = { food: 35, wood: 20, iron: 10, people: 6 };
 
 const statLabels = [
   ["speed", "Скор."],
@@ -26,7 +28,10 @@ function defaultCityState(): CityState {
   return {
     resources: { food: 120, wood: 70, stone: 40, iron: 25, people: 18 },
     cells: Array.from({ length: 9 }, (_, index) => ({ id: `sina-${index + 1}`, buildingId: null })),
+    roseCells: Array.from({ length: 6 }, (_, index) => ({ id: `rose-${index + 1}`, buildingId: null })),
     gateCells: ["north", "east", "south", "west"].map(gate => ({ id: `gate-${gate}`, buildingId: null })),
+    repairedGates: [],
+    securedTerritories: [],
     unlockedWalls: ["sina"],
     lastTickAt: new Date().toISOString()
   };
@@ -35,11 +40,15 @@ function defaultCityState(): CityState {
 function normalizeCityState(city: Partial<CityState> | null | undefined): CityState {
   const defaults = defaultCityState();
   const cells = Array.isArray(city?.cells) ? city.cells : defaults.cells;
+  const roseCells = Array.isArray(city?.roseCells) ? city.roseCells : defaults.roseCells;
   const gateCells = Array.isArray(city?.gateCells) ? city.gateCells : defaults.gateCells;
   return {
     resources: city?.resources || defaults.resources,
     cells,
+    roseCells: defaults.roseCells.map(defaultCell => roseCells.find(cell => cell.id === defaultCell.id) || defaultCell),
     gateCells: defaults.gateCells.map(defaultCell => gateCells.find(cell => cell.id === defaultCell.id) || defaultCell),
+    repairedGates: Array.isArray(city?.repairedGates) ? city.repairedGates : defaults.repairedGates,
+    securedTerritories: Array.isArray(city?.securedTerritories) ? city.securedTerritories : defaults.securedTerritories,
     unlockedWalls: Array.isArray(city?.unlockedWalls) ? city.unlockedWalls : defaults.unlockedWalls,
     lastTickAt: city?.lastTickAt || defaults.lastTickAt
   };
@@ -167,18 +176,47 @@ function App() {
 
   function build(cellId: string, buildingId: string) {
     const isGateCell = cellId.startsWith("gate-");
+    const isRoseCell = cellId.startsWith("rose-");
     const option = (isGateCell ? gateBuildingOptions : buildingOptions).find(item => item.id === buildingId);
     if (!option) return;
+    if (isRoseCell && !city.unlockedWalls.includes("rose")) return setMessage("Сначала почини ворота и отвоюй пространство между Стеной Сина и Стеной Роза.");
     if (!canPay(city, option.cost)) return setMessage("Не хватает ресурсов для строительства.");
 
     setCity(current => ({
       ...current,
       resources: pay(current.resources, option.cost),
       cells: current.cells.map(cell => cell.id === cellId ? { ...cell, buildingId } : cell),
+      roseCells: current.roseCells.map(cell => cell.id === cellId ? { ...cell, buildingId } : cell),
       gateCells: current.gateCells.map(cell => cell.id === cellId ? { ...cell, buildingId } : cell),
       lastTickAt: new Date().toISOString()
     }));
     setMessage(`${option.name} построено.`);
+  }
+
+  function repairSinaGates() {
+    if (city.repairedGates.includes("sina")) return;
+    if (!canPay(city, repairSinaGateCost)) return setMessage(`Для ремонта ворот нужно: ${formatCost(repairSinaGateCost)}.`);
+    setCity(current => ({
+      ...current,
+      resources: pay(current.resources, repairSinaGateCost),
+      repairedGates: current.repairedGates.includes("sina") ? current.repairedGates : [...current.repairedGates, "sina"],
+      lastTickAt: new Date().toISOString()
+    }));
+    setMessage("Ворота Стены Сина отремонтированы. Теперь можно закрепить пространство до Стены Роза.");
+  }
+
+  function secureSinaRoseTerritory() {
+    if (city.securedTerritories.includes("sina-rose")) return;
+    if (!city.repairedGates.includes("sina")) return setMessage("Сначала нужно отремонтировать ворота Стены Сина.");
+    if (!canPay(city, secureSinaRoseCost)) return setMessage(`Для закрепления пространства нужно: ${formatCost(secureSinaRoseCost)}.`);
+    setCity(current => ({
+      ...current,
+      resources: pay(current.resources, secureSinaRoseCost),
+      securedTerritories: current.securedTerritories.includes("sina-rose") ? current.securedTerritories : [...current.securedTerritories, "sina-rose"],
+      unlockedWalls: current.unlockedWalls.includes("rose") ? current.unlockedWalls : [...current.unlockedWalls, "rose"],
+      lastTickAt: new Date().toISOString()
+    }));
+    setMessage("Пояс между Стеной Сина и Стеной Роза закреплен. Новые участки доступны для строительства.");
   }
 
   function startExpedition() {
@@ -262,6 +300,8 @@ function App() {
           city={city}
           setScreen={setScreen}
           onBuild={build}
+          onRepairSinaGates={repairSinaGates}
+          onSecureSinaRoseTerritory={secureSinaRoseTerritory}
           onStartExpedition={startExpedition}
           mission={mission}
           onGather={gather}
@@ -361,6 +401,8 @@ function CityScreen(props: {
   city: CityState;
   setScreen: (screen: "setup" | "city") => void;
   onBuild: (cellId: string, buildingId: string) => void;
+  onRepairSinaGates: () => void;
+  onSecureSinaRoseTerritory: () => void;
   onStartExpedition: () => void;
   mission: MissionState | null;
   onGather: (site: typeof expeditionSites[number]) => void;
@@ -371,6 +413,11 @@ function CityScreen(props: {
   const freeCells = props.city.cells.length - builtCells;
   const builtGateCells = props.city.gateCells.filter(cell => cell.buildingId).length;
   const freeGateCells = props.city.gateCells.length - builtGateCells;
+  const roseUnlocked = props.city.unlockedWalls.includes("rose");
+  const gatesRepaired = props.city.repairedGates.includes("sina");
+  const territorySecured = props.city.securedTerritories.includes("sina-rose");
+  const builtRoseCells = props.city.roseCells.filter(cell => cell.buildingId).length;
+  const freeRoseCells = props.city.roseCells.length - builtRoseCells;
   const hasMission = Boolean(props.mission?.active && !props.mission.finished);
 
   return (
@@ -388,6 +435,15 @@ function CityScreen(props: {
       </section>
 
       <ResourceBar resources={props.city.resources} />
+
+      <WallProgress
+        gatesRepaired={gatesRepaired}
+        territorySecured={territorySecured}
+        roseUnlocked={roseUnlocked}
+        resources={props.city.resources}
+        onRepair={props.onRepairSinaGates}
+        onSecure={props.onSecureSinaRoseTerritory}
+      />
 
       <section className="city-layout">
         <div className="map-panel">
@@ -436,6 +492,19 @@ function CityScreen(props: {
                     onBuild={props.onBuild}
                   />
                 ))}
+                {props.city.roseCells.map((cell, index) => (
+                  <MapBuildSlot
+                    key={cell.id}
+                    cell={cell}
+                    index={index}
+                    options={buildingOptions}
+                    className={`rose-plot rose-plot-${index + 1}`}
+                    locked={!roseUnlocked}
+                    label={roseUnlocked ? undefined : "Закрыто"}
+                    resources={props.city.resources}
+                    onBuild={props.onBuild}
+                  />
+                ))}
                 {props.city.gateCells.map((cell, index) => (
                   <MapBuildSlot
                     key={cell.id}
@@ -468,6 +537,26 @@ function CityScreen(props: {
           </div>
           <div className="cells">
             {props.city.cells.map(cell => <BuildCell key={cell.id} cell={cell} options={buildingOptions} resources={props.city.resources} onBuild={props.onBuild} />)}
+          </div>
+          <div className="cells-head rose-cells-head">
+            <div>
+              <span className="eyebrow">Пояс Сина-Роза</span>
+              <strong>{roseUnlocked ? "Отвоеванное пространство" : "Закрытая территория"}</strong>
+            </div>
+            <span>{roseUnlocked ? (freeRoseCells ? `${freeRoseCells} участков свободно` : "пояс застроен") : "нужны ремонт ворот и закрепление"}</span>
+          </div>
+          <div className={`cells rose-cells ${roseUnlocked ? "" : "locked-cells"}`}>
+            {props.city.roseCells.map((cell, index) => (
+              <BuildCell
+                key={cell.id}
+                cell={cell}
+                title={`Участок Сина-Роза ${index + 1}`}
+                options={buildingOptions}
+                locked={!roseUnlocked}
+                resources={props.city.resources}
+                onBuild={props.onBuild}
+              />
+            ))}
           </div>
           <div className="cells-head gate-cells-head">
             <div>
@@ -504,6 +593,37 @@ function CityScreen(props: {
   );
 }
 
+function WallProgress({ gatesRepaired, territorySecured, roseUnlocked, resources, onRepair, onSecure }: { gatesRepaired: boolean; territorySecured: boolean; roseUnlocked: boolean; resources: Record<ResourceKey, number>; onRepair: () => void; onSecure: () => void }) {
+  const canRepair = canPayResources(resources, repairSinaGateCost);
+  const canSecure = gatesRepaired && canPayResources(resources, secureSinaRoseCost);
+  return (
+    <section className="wall-progress">
+      <div className="wall-step done">
+        <span>1</span>
+        <strong>Стена Сина</strong>
+        <p>Внутренняя столица доступна для строительства.</p>
+      </div>
+      <div className={gatesRepaired ? "wall-step done" : "wall-step active"}>
+        <span>2</span>
+        <strong>Ремонт ворот</strong>
+        <p>{gatesRepaired ? "Ворота Стены Сина держат строй." : `Цена: ${formatCost(repairSinaGateCost)}.`}</p>
+        {!gatesRepaired && <button className="secondary" disabled={!canRepair} onClick={onRepair}>Починить ворота</button>}
+      </div>
+      <div className={territorySecured ? "wall-step done" : gatesRepaired ? "wall-step active" : "wall-step locked"}>
+        <span>3</span>
+        <strong>Пояс Сина-Роза</strong>
+        <p>{territorySecured ? "Пространство закреплено, строительство открыто." : `Цена закрепления: ${formatCost(secureSinaRoseCost)}.`}</p>
+        {!territorySecured && <button className="secondary" disabled={!canSecure} onClick={onSecure}>Закрепить территорию</button>}
+      </div>
+      <div className={roseUnlocked ? "wall-step active" : "wall-step locked"}>
+        <span>4</span>
+        <strong>Стена Роза</strong>
+        <p>{roseUnlocked ? "Следующий пояс готов к развитию." : "Откроется после закрепления пространства."}</p>
+      </div>
+    </section>
+  );
+}
+
 function CharacterCard({ character, selected, onClick }: { character: Character; selected: boolean; onClick: () => void }) {
   return (
     <button className={`character-card ${selected ? "selected" : ""}`} style={{ "--a": character.colors[0], "--b": character.colors[1] } as React.CSSProperties} onClick={onClick}>
@@ -537,10 +657,10 @@ function ResourceBar({ resources }: { resources: Record<ResourceKey, number> }) 
   );
 }
 
-function BuildCell({ cell, title, options, resources, onBuild }: { cell: { id: string; buildingId: string | null }; title?: string; options: typeof buildingOptions | typeof gateBuildingOptions; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
+function BuildCell({ cell, title, options, locked = false, resources, onBuild }: { cell: { id: string; buildingId: string | null }; title?: string; options: typeof buildingOptions | typeof gateBuildingOptions; locked?: boolean; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
   const building = options.find(option => option.id === cell.buildingId);
   return (
-    <div className="build-cell">
+    <div className={`build-cell ${locked ? "locked" : ""}`}>
       {building ? (
         <>
           {title && <small>{title}</small>}
@@ -550,8 +670,8 @@ function BuildCell({ cell, title, options, resources, onBuild }: { cell: { id: s
       ) : (
         <>
           {title && <small>{title}</small>}
-          <strong>{title ? "Свободная пристройка" : "Свободная ячейка"}</strong>
-          <select defaultValue="" onChange={event => event.target.value && onBuild(cell.id, event.target.value)}>
+          <strong>{locked ? "Территория закрыта" : title ? "Свободная пристройка" : "Свободная ячейка"}</strong>
+          <select disabled={locked} defaultValue="" onChange={event => event.target.value && onBuild(cell.id, event.target.value)}>
             <option value="" disabled>Построить...</option>
             {options.map(option => (
               <option key={option.id} value={option.id} disabled={!canPayResources(resources, option.cost)}>
@@ -559,17 +679,17 @@ function BuildCell({ cell, title, options, resources, onBuild }: { cell: { id: s
               </option>
             ))}
           </select>
-          <span>Недоступные здания станут активны, когда хватит ресурсов.</span>
+          <span>{locked ? "Сначала почини ворота и закрепи пространство между стенами." : "Недоступные здания станут активны, когда хватит ресурсов."}</span>
         </>
       )}
     </div>
   );
 }
 
-function MapBuildSlot({ cell, index, options, className = "", label, resources, onBuild }: { cell: { id: string; buildingId: string | null }; index: number; options: typeof buildingOptions | typeof gateBuildingOptions; className?: string; label?: string; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
+function MapBuildSlot({ cell, index, options, className = "", label, locked = false, resources, onBuild }: { cell: { id: string; buildingId: string | null }; index: number; options: typeof buildingOptions | typeof gateBuildingOptions; className?: string; label?: string; locked?: boolean; resources: Record<ResourceKey, number>; onBuild: (cellId: string, buildingId: string) => void }) {
   const building = options.find(option => option.id === cell.buildingId);
   return (
-    <div className={`map-build-slot plot-${index + 1} ${className} ${building ? `built building-${building.id}` : "empty"}`}>
+    <div className={`map-build-slot plot-${index + 1} ${className} ${locked ? "locked" : ""} ${building ? `built building-${building.id}` : "empty"}`}>
       {building ? (
         <>
           <strong>{building.name}</strong>
@@ -580,6 +700,7 @@ function MapBuildSlot({ cell, index, options, className = "", label, resources, 
           <span className="plot-index">{label ? "Ворота" : `#${index + 1}`}</span>
           <strong>{label || "Пустой участок"}</strong>
           <select
+            disabled={locked}
             defaultValue=""
             aria-label={`Построить здание: ${label || `участок ${index + 1}`}`}
             onChange={event => event.target.value && onBuild(cell.id, event.target.value)}
@@ -713,7 +834,7 @@ function getExpeditionBonuses(city?: CityState) {
 }
 
 function allCityCells(city: CityState) {
-  return [...city.cells, ...city.gateCells];
+  return [...city.cells, ...city.roseCells, ...city.gateCells];
 }
 
 function allBuildingOptions() {

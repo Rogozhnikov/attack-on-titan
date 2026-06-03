@@ -505,6 +505,65 @@ select option {
   font-size: 1.55rem;
 }
 
+.wall-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.wall-step {
+  min-height: 142px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .045);
+}
+
+.wall-step span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(223, 182, 94, .28);
+  border-radius: 50%;
+  color: #f1dc9f;
+  background: rgba(223, 182, 94, .08);
+  font-weight: 950;
+}
+
+.wall-step strong {
+  color: var(--text);
+}
+
+.wall-step p {
+  line-height: 1.35;
+  font-size: .84rem;
+}
+
+.wall-step.done {
+  border-color: rgba(111, 143, 104, .34);
+  background: rgba(111, 143, 104, .08);
+}
+
+.wall-step.active {
+  border-color: rgba(223, 182, 94, .36);
+  background: rgba(223, 182, 94, .07);
+}
+
+.wall-step.locked {
+  opacity: .62;
+}
+
+.wall-step .secondary {
+  width: 100%;
+  margin-top: auto;
+}
+
 .city-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -1000,6 +1059,33 @@ select option {
 .plot-8 { left: 61%; top: 61%; }
 .plot-9 { left: 50%; top: 48%; }
 
+.rose-plot {
+  width: 78px;
+  height: 52px;
+  border-color: rgba(143, 168, 116, .7);
+  background:
+    linear-gradient(rgba(214, 222, 178, .7), rgba(214, 222, 178, .7)),
+    repeating-linear-gradient(45deg, rgba(67, 91, 52, .18) 0 7px, transparent 7px 13px);
+}
+
+.rose-plot.locked,
+.map-build-slot.locked {
+  filter: grayscale(.6);
+  opacity: .76;
+}
+
+.rose-plot.locked select,
+.map-build-slot.locked select {
+  cursor: not-allowed;
+}
+
+.rose-plot-1 { left: 34%; top: 28%; }
+.rose-plot-2 { left: 66%; top: 28%; }
+.rose-plot-3 { left: 29%; top: 42%; }
+.rose-plot-4 { left: 71%; top: 42%; }
+.rose-plot-5 { left: 34%; top: 74%; }
+.rose-plot-6 { left: 66%; top: 74%; }
+
 .gate-plot {
   width: 94px;
   height: 54px;
@@ -1066,6 +1152,13 @@ select option {
   background: rgba(0, 0, 0, .17);
 }
 
+.build-cell.locked {
+  opacity: .68;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .04) 0 8px, transparent 8px 16px),
+    rgba(0, 0, 0, .16);
+}
+
 .build-cell strong {
   color: #f1dc9f;
 }
@@ -1092,6 +1185,14 @@ select option {
   background:
     linear-gradient(135deg, rgba(223, 182, 94, .07), rgba(255, 255, 255, .035)),
     rgba(0, 0, 0, .13);
+}
+
+.rose-cells {
+  background: rgba(111, 143, 104, .035);
+}
+
+.rose-cells .build-cell {
+  border-color: rgba(111, 143, 104, .18);
 }
 
 .command-panel {
@@ -1208,6 +1309,10 @@ select option {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .wall-progress {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .map-toolbar,
   .cells-head {
     align-items: flex-start;
@@ -1256,6 +1361,10 @@ select option {
 
   .resources {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wall-progress {
+    grid-template-columns: 1fr;
   }
 
   .resource-card {

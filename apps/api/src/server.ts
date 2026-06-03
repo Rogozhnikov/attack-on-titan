@@ -27,7 +27,10 @@ const modes = new Set(["История", "Арена", "Выживание"]);
 type CityState = {
   resources: Record<"food" | "wood" | "stone" | "iron" | "people", number>;
   cells: Array<{ id: string; buildingId: string | null }>;
+  roseCells: Array<{ id: string; buildingId: string | null }>;
   gateCells: Array<{ id: string; buildingId: string | null }>;
+  repairedGates: string[];
+  securedTerritories: string[];
   unlockedWalls: string[];
   lastTickAt: string;
 };
@@ -69,7 +72,10 @@ function defaultCityState(): CityState {
   return {
     resources: { food: 120, wood: 70, stone: 40, iron: 25, people: 18 },
     cells: Array.from({ length: 9 }, (_, index) => ({ id: `sina-${index + 1}`, buildingId: null })),
+    roseCells: Array.from({ length: 6 }, (_, index) => ({ id: `rose-${index + 1}`, buildingId: null })),
     gateCells: ["north", "east", "south", "west"].map(gate => ({ id: `gate-${gate}`, buildingId: null })),
+    repairedGates: [],
+    securedTerritories: [],
     unlockedWalls: ["sina"],
     lastTickAt: new Date().toISOString()
   };
@@ -78,11 +84,15 @@ function defaultCityState(): CityState {
 function normalizeCityState(cityState: Partial<CityState> | null | undefined): CityState {
   const defaults = defaultCityState();
   const cells = Array.isArray(cityState?.cells) ? cityState.cells : defaults.cells;
+  const roseCells = Array.isArray(cityState?.roseCells) ? cityState.roseCells : defaults.roseCells;
   const gateCells = Array.isArray(cityState?.gateCells) ? cityState.gateCells : defaults.gateCells;
   return {
     resources: cityState?.resources || defaults.resources,
     cells,
+    roseCells: defaults.roseCells.map(defaultCell => roseCells.find(cell => cell.id === defaultCell.id) || defaultCell),
     gateCells: defaults.gateCells.map(defaultCell => gateCells.find(cell => cell.id === defaultCell.id) || defaultCell),
+    repairedGates: Array.isArray(cityState?.repairedGates) ? cityState.repairedGates : defaults.repairedGates,
+    securedTerritories: Array.isArray(cityState?.securedTerritories) ? cityState.securedTerritories : defaults.securedTerritories,
     unlockedWalls: Array.isArray(cityState?.unlockedWalls) ? cityState.unlockedWalls : defaults.unlockedWalls,
     lastTickAt: cityState?.lastTickAt || defaults.lastTickAt
   };
